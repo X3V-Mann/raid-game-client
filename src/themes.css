@@ -1,0 +1,158 @@
+/* ===== Темы: metro / tarkov / fallout (stalker — базовая) ===== */
+
+html[data-theme="metro"] {
+    --t-bg1: #060e12;
+    --t-bg2: #0a161b;
+    --t-bg3: #040a0d;
+    --t-panel: linear-gradient(180deg, #0d1a1f 0%, #081216 100%);
+    --t-panel-solid: #0b171c;
+    --t-line: #1d353c;
+    --t-line-soft: #14262b;
+    --t-text: #b9cccb;
+    --t-muted: #7d9393;
+    --t-accent: #6fb7c9;
+    --t-accent-soft: rgba(111, 183, 201, 0.12);
+    --t-glow: rgba(70, 150, 170, 0.10);
+    --t-danger: #c96a5a;
+}
+
+html[data-theme="tarkov"] {
+    --t-bg1: #10130c;
+    --t-bg2: #161a0f;
+    --t-bg3: #0a0d07;
+    --t-panel: linear-gradient(180deg, #1a1e13 0%, #12150c 100%);
+    --t-panel-solid: #171b10;
+    --t-line: #333a22;
+    --t-line-soft: #262c1a;
+    --t-text: #c6c7a8;
+    --t-muted: #8c8f70;
+    --t-accent: #a7b06a;
+    --t-accent-soft: rgba(167, 176, 106, 0.12);
+    --t-glow: rgba(140, 150, 70, 0.10);
+    --t-danger: #c06a4a;
+}
+
+html[data-theme="fallout"] {
+    --t-bg1: #0a0f08;
+    --t-bg2: #10160c;
+    --t-bg3: #060a05;
+    --t-panel: linear-gradient(180deg, #121a0e 0%, #0b1208 100%);
+    --t-panel-solid: #10180c;
+    --t-line: #2c3a1e;
+    --t-line-soft: #1e2a15;
+    --t-text: #b8d0a0;
+    --t-muted: #7f946d;
+    --t-accent: #7ee787;
+    --t-accent-soft: rgba(126, 231, 135, 0.10);
+    --t-glow: rgba(90, 200, 90, 0.10);
+    --t-danger: #d47a4a;
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) body {
+    color: var(--t-text);
+    background:
+        radial-gradient(ellipse at 30% 20%, var(--t-glow) 0%, transparent 55%),
+        linear-gradient(180deg, var(--t-bg1) 0%, var(--t-bg2) 45%, var(--t-bg3) 100%);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .sidebar {
+    background: linear-gradient(180deg, var(--t-bg2) 0%, var(--t-bg3) 100%);
+    border-right-color: var(--t-line);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .top-bar,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .panel h3,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .modal,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .trade-panel,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .quest,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .shop-card,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .module,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .settings-block,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .raid-feed,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .combat-rpg {
+    background: var(--t-panel);
+    border-color: var(--t-line);
+    color: var(--t-text);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .panel h3,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .panel h4,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) h3,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) h4 {
+    color: var(--t-accent);
+    border-left-color: var(--t-accent);
+    border-color: var(--t-line);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .panel h3 {
+    background: var(--t-panel);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) nav button,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .tabs button {
+    background: var(--t-accent-soft);
+    border-color: var(--t-line);
+    color: var(--t-muted);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) nav button:hover,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .tabs button.active {
+    color: var(--t-accent);
+    border-color: var(--t-accent);
+    background: var(--t-accent-soft);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .money,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .trade-head,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .quest b,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .shop-card b {
+    color: var(--t-accent);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .modal {
+    border-top-color: var(--t-accent);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .equip-slot,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .inv-cell,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .trade-cell {
+    background: var(--t-panel-solid);
+    border-color: var(--t-line);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .menu-btn,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .btn-ok,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .shop-card button,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .module button,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .trade-btn-execute {
+    background: var(--t-accent-soft);
+    border-color: var(--t-accent);
+    color: var(--t-accent);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .btn-danger,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .trade-btn-clear {
+    border-color: var(--t-danger);
+    color: var(--t-danger);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .main-menu-overlay {
+    background: radial-gradient(circle at center, rgba(3, 8, 10, 0.55) 0%, rgba(1, 3, 4, 0.96) 100%);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .desc,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .hint {
+    color: var(--t-muted);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .bar-outer {
+    border-color: var(--t-line);
+    background: var(--t-panel-solid);
+}
+
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) input,
+html:is([data-theme="metro"], [data-theme="tarkov"], [data-theme="fallout"]) .onboarding-field input {
+    background: var(--t-panel-solid);
+    border-color: var(--t-line);
+    color: var(--t-text);
+}
