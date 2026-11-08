@@ -1,0 +1,1066 @@
+/* ===== Новые элементы: описание предметов, бартер, перки, темы, сюжет ===== */
+
+.missing-icon {
+    object-fit: contain;
+    opacity: 0.8;
+}
+
+/* --- Описание предмета (по клику) --- */
+.item-details {
+    margin-top: 12px;
+    background: rgba(10, 8, 6, 0.85);
+    border: 1px solid #3a2f22;
+    box-shadow: inset 0 0 0 1px rgba(212, 160, 74, 0.08);
+    padding: 10px 12px 12px;
+}
+
+.item-details-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8a7a5a;
+    border-bottom: 1px dashed #2e2620;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+}
+
+.item-details-body {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.item-details-icon {
+    flex: 0 0 96px;
+    width: 96px;
+    height: 96px;
+    border: 1px solid #3a2f22;
+    background: #0c0a07;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.item-details-icon img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.item-details-info { flex: 1; min-width: 0; }
+
+.item-details-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 15px;
+}
+
+.item-details-title .item-count { color: #9a8a6a; font-size: 12px; }
+
+.item-details-tags {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0 8px;
+    flex-wrap: wrap;
+}
+
+.rarity-tag,
+.type-tag {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid #3a2f22;
+    color: #b8a888;
+}
+
+.type-tag { border-color: #2e2620; color: #8a7a5a; }
+
+.item-details-desc {
+    margin: 0 0 8px;
+    color: #b8a888;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.item-details-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 11px;
+    color: #9a8a6a;
+    margin-bottom: 8px;
+}
+
+.item-details-prices {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #d4a04a;
+    border-top: 1px dashed #2e2620;
+    padding-top: 8px;
+}
+
+.item-details-prices .muted { color: #7a6a52; }
+
+/* --- Торговцы: правила, бартер, состояния --- */
+.trader-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10px;
+    color: #8a7a5a;
+    border: 1px dashed #2e2620;
+    padding: 8px;
+    margin-top: 8px;
+}
+
+.trader-rules b { color: #c8b898; font-size: 11px; }
+
+.barter-btn { margin-top: 6px; background: rgba(90, 120, 140, 0.12); }
+
+.trade-cell.not-buyable {
+    opacity: 0.35;
+    filter: grayscale(1);
+    cursor: not-allowed;
+}
+
+.trade-cell.loyalty-locked {
+    opacity: 0.55;
+    filter: grayscale(0.8);
+    cursor: not-allowed;
+}
+
+.loyalty-lock {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    font-size: 11px;
+}
+
+.loyalty-panel {
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px dashed #2e2620;
+    background: rgba(70, 80, 40, 0.10);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.loyalty-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #8a7a5a;
+}
+
+.loyalty-head b { color: #a7b06a; font-size: 12px; }
+
+.loyalty-bar {
+    height: 8px;
+    border: 1px solid #3a3028;
+    background: #0d0b08;
+    overflow: hidden;
+}
+
+.loyalty-bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, #5a6a32, #a7b06a);
+    transition: width 0.3s;
+}
+
+.loyalty-rep { font-size: 9px; color: #6f624c; }
+
+/* --- Покупка: крупные ± и отдельная кнопка --- */
+.buy-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed #2e2620;
+}
+
+.buy-controls-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a7a5a;
+}
+
+.qty-stepper.big {
+    display: flex;
+    align-items: center;
+    border: 1px solid #4a3f2a;
+    background: #0d0b08;
+}
+
+.qty-stepper.big button {
+    width: 38px;
+    height: 36px;
+    font-size: 20px;
+    line-height: 1;
+    background: #2a2418;
+    border: none;
+    color: #d4a04a;
+    cursor: pointer;
+}
+
+.qty-stepper.big button:hover:not(:disabled) { background: #3a3120; }
+.qty-stepper.big button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.qty-stepper.big span {
+    min-width: 50px;
+    text-align: center;
+    font-size: 16px;
+    color: #e8d8b8;
+    font-weight: 700;
+}
+
+.buy-button {
+    padding: 10px 18px;
+    background: #2a2418;
+    border: 1px solid #6a5a2a;
+    color: #e0b050;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.buy-button:hover:not(:disabled) { background: #3a3120; }
+.buy-button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.loyalty-warning {
+    margin: 8px 0 0;
+    color: #d8a050;
+    font-size: 11px;
+}
+
+.tag-locked {
+    border-color: #6a4a2a;
+    color: #d8a050;
+}
+
+.trade-cell.selected,
+.inv-cell.selected {
+    outline: 2px solid #d4a04a;
+    outline-offset: -2px;
+}
+
+.trade-notice {
+    margin-top: 8px;
+    color: #e0a050;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.barter-panel {
+    margin-top: 12px;
+    border: 1px solid #2e2620;
+    background: rgba(10, 8, 6, 0.7);
+    padding: 10px;
+}
+
+.barter-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px dashed #2e2620;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.barter-head span { font-size: 10px; color: #8a7a5a; }
+
+.barter-list { display: flex; flex-direction: column; gap: 8px; }
+
+.barter-offer {
+    display: grid;
+    grid-template-columns: 1.1fr 1.6fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #241d16;
+    background: rgba(20, 16, 11, 0.6);
+}
+
+.barter-offer.ready { border-color: #4a5a3a; }
+
+.barter-gift {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #d8c8a8;
+}
+
+.barter-gift img { width: 34px; height: 34px; object-fit: contain; }
+
+.barter-cost {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: #8a7a5a;
+}
+
+.barter-cost .ok { color: #8fbf7a; }
+.barter-cost .no { color: #c96a5a; }
+
+.barter-offer button {
+    padding: 7px 10px;
+    background: #2a2418;
+    border: 1px solid #4a3f2a;
+    color: #d4a04a;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.barter-offer button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Перки --- */
+.perk-points {
+    margin: 10px 0 14px;
+    padding: 10px 12px;
+    border-left: 3px solid #6a4a8a;
+    background: rgba(106, 74, 138, 0.1);
+    color: #c8b898;
+}
+
+.perk-points b { color: #c9a6ff; font-size: 18px; }
+
+.perk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+}
+
+.perk-card {
+    border: 1px solid #2e2620;
+    background: linear-gradient(180deg, #1a1611 0%, #120f0b 100%);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.perk-card.maxed { border-color: #6a5a2a; }
+
+.perk-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.perk-head b { flex: 1; }
+.perk-icon { font-size: 18px; }
+.perk-level { font-size: 10px; color: #8a7a5a; }
+
+.perk-card p {
+    margin: 0;
+    font-size: 11px;
+    color: #9a8a6a;
+    line-height: 1.4;
+    min-height: 32px;
+}
+
+.perk-pips { display: flex; gap: 4px; }
+
+.perk-pips span {
+    width: 18px;
+    height: 6px;
+    background: #2a2218;
+    border: 1px solid #3a2f22;
+}
+
+.perk-pips span.on { background: #8a6a2a; border-color: #c9a050; }
+
+.perk-card button {
+    padding: 7px;
+    background: #241d16;
+    border: 1px solid #4a3f2a;
+    color: #d4a04a;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.perk-card button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Темы --- */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px;
+    border: 1px solid #2e2620;
+    background: #14110d;
+    color: #c8b898;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.theme-card.active { border-color: var(--theme-preview, #d4a04a); box-shadow: 0 0 12px color-mix(in srgb, var(--theme-preview, #d4a04a) 30%, transparent); }
+
+.theme-swatch {
+    width: 100%;
+    height: 10px;
+    background: var(--theme-preview, #d4a04a);
+    margin-bottom: 4px;
+}
+
+.theme-card b { font-size: 13px; }
+.theme-card span { font-size: 10px; color: #8a7a5a; }
+
+/* --- Сюжет: главы --- */
+.chapter-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+
+.chapter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid #2a2218;
+    background: rgba(20, 16, 11, 0.6);
+}
+
+.chapter-row.done { border-color: #3a4a2a; }
+.chapter-row.current { border-color: #6a5a2a; background: rgba(90, 70, 30, 0.12); }
+
+.chapter-num {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #4a3f2a;
+    color: #d4a04a;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.chapter-row > div { flex: 1; display: flex; flex-direction: column; }
+.chapter-row > div span { font-size: 10px; color: #8a7a5a; }
+.chapter-state { font-size: 14px; }
+
+.quest-chapter { color: #d4a04a; margin-right: 4px; }
+.quest-reward { display: block; color: #b8a070; font-size: 11px; margin-top: 2px; }
+.locked-mark { color: #8a7a5a; font-size: 11px; }
+.quest-group { margin-bottom: 14px; }
+.quest-group h4 { margin: 10px 0 6px; color: #d4a04a; border-bottom: 1px dashed #2e2620; padding-bottom: 4px; }
+
+.ending-card {
+    margin-top: 12px;
+    padding: 26px;
+    border: 1px solid #4a3f2a;
+    background: radial-gradient(circle at 50% 0%, rgba(212, 160, 74, 0.12), transparent 60%), #0c0a07;
+    text-align: center;
+}
+
+.ending-card h2 { color: #e0b050; letter-spacing: 10px; margin: 0 0 16px; }
+.ending-card p { max-width: 620px; margin: 0 auto 10px; line-height: 1.6; color: #c8b898; }
+.ending-card .desc { color: #8a7a5a; margin-top: 16px; }
+
+.ending-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, rgba(30, 24, 12, 0.96), rgba(0, 0, 0, 0.98));
+    animation: ending-fade 1.2s ease-out;
+}
+
+@keyframes ending-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.ending-screen .ending-card { max-width: 720px; }
+
+.end-actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+
+/* --- Карта: список локаций --- */
+.location-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.location-row {
+    display: grid;
+    grid-template-columns: 170px 1fr 150px;
+    gap: 14px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #2e2620;
+    background: linear-gradient(180deg, #17130e 0%, #0f0c08 100%);
+}
+
+.location-row.locked { opacity: 0.75; }
+
+.location-thumb {
+    height: 92px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid #3a3028;
+    filter: saturate(0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.location-row.locked .location-thumb { filter: grayscale(1) brightness(0.7); }
+
+.location-lock { font-size: 30px; opacity: 0.9; }
+
+.location-info { display: flex; flex-direction: column; gap: 4px; }
+.location-info b { font-size: 16px; color: #d4a04a; letter-spacing: 1px; }
+.location-info span { font-size: 11px; color: #9a8a6a; line-height: 1.4; }
+.location-hint { color: #d8a050 !important; }
+
+.location-action { display: flex; justify-content: flex-end; }
+.location-action button {
+    padding: 10px 16px;
+    background: #2a2418;
+    border: 1px solid #6a5a2a;
+    color: #d4a04a;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 1px;
+    font-size: 12px;
+}
+.location-action button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Карта: закрытая локация --- */
+.location-card.locked { opacity: 0.72; filter: saturate(0.6); }
+.location-locked {
+    display: block;
+    margin: 6px 0;
+    padding: 6px;
+    font-size: 10px;
+    color: #d4a04a;
+    border: 1px dashed #4a3f2a;
+    text-align: center;
+}
+
+/* --- Схрон --- */
+.stash-detail {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #2e2620;
+    background: #120f0b;
+    font-size: 12px;
+}
+
+.stash-detail p { color: #9a8a6a; margin: 6px 0 8px; }
+
+/* ===== Бой в стиле RPG Maker ===== */
+.rpg-battle-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: #050403;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.rpg-battle {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    background:
+        radial-gradient(ellipse at 50% 30%, rgba(90, 60, 30, 0.18), transparent 65%),
+        linear-gradient(180deg, #12100c 0%, #080706 100%);
+    padding: 14px;
+    gap: 10px;
+}
+
+.rpg-enemies {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    min-height: 0;
+}
+
+.rpg-enemy {
+    width: 190px;
+    min-height: 210px;
+    border: 2px solid #3a3028;
+    background: linear-gradient(180deg, rgba(30, 25, 18, 0.85), rgba(10, 8, 6, 0.9));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.12s, border-color 0.12s;
+}
+
+.rpg-enemy:hover { border-color: #6a5a2a; }
+.rpg-enemy.selected { border-color: #d4a04a; box-shadow: 0 0 18px rgba(212, 160, 74, 0.35); transform: translateY(-3px); }
+.rpg-enemy.dead { opacity: 0.35; filter: grayscale(1); cursor: default; transform: none; box-shadow: none; }
+
+.rpg-enemy-name { font-size: 12px; color: #d8c8a8; letter-spacing: 1px; text-align: center; }
+.rpg-enemy-sprite { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 110px; }
+.rpg-enemy-sprite img { max-width: 150px; max-height: 150px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.8)); }
+.rpg-enemy-sprite span { font-size: 64px; }
+
+.rpg-hpbar {
+    width: 100%;
+    height: 16px;
+    border: 1px solid #3a3028;
+    background: #0a0806;
+    position: relative;
+}
+
+.rpg-hpbar-fill {
+    height: 100%;
+    background: linear-gradient(180deg, #a02a2a, #5a1010);
+    transition: width 0.25s;
+}
+
+.rpg-hpbar span {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: #f0e0c0;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.rpg-message {
+    min-height: 112px;
+    border: 2px solid #4a3f2a;
+    background: linear-gradient(180deg, rgba(16, 22, 34, 0.92), rgba(8, 10, 16, 0.95));
+    box-shadow: inset 0 0 0 2px #0a0806, 0 0 0 1px #1a2436;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 3px;
+    font-size: 12px;
+    color: #b8c8d8;
+}
+
+.rpg-line { opacity: 0.55; }
+.rpg-line.current { opacity: 1; color: #f0e0c0; }
+
+.rpg-result {
+    font-size: 26px;
+    letter-spacing: 8px;
+    text-align: center;
+    color: #e0b050;
+    text-shadow: 0 0 16px rgba(224, 176, 80, 0.5);
+}
+
+.rpg-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 10px;
+}
+
+.rpg-status {
+    border: 2px solid #3a3028;
+    background: linear-gradient(180deg, #14110d 0%, #0a0806 100%);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rpg-status-name { font-size: 13px; color: #d4a04a; letter-spacing: 1px; }
+.rpg-status-name span { color: #8a7a5a; font-size: 10px; }
+
+.rpg-bar-row { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #9a8a6a; }
+.rpg-bar-label { width: 22px; letter-spacing: 1px; }
+.rpg-bar { flex: 1; height: 10px; border: 1px solid #3a3028; background: #080706; }
+.rpg-bar-fill { height: 100%; transition: width 0.2s; }
+.rpg-bar-fill.hp { background: linear-gradient(90deg, #7a1a1a, #c04a3a); }
+.rpg-bar-fill.sp { background: linear-gradient(90deg, #6a5a1a, #c0a040); }
+.rpg-bar-row b { width: 64px; text-align: right; color: #c8b898; font-size: 10px; }
+
+.rpg-mini-stats { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10px; color: #8a7a5a; }
+.rpg-mini-stats .danger { color: #e05a4a; }
+
+.rpg-commands {
+    border: 2px solid #4a3f2a;
+    background: linear-gradient(180deg, rgba(16, 22, 34, 0.92), rgba(8, 10, 16, 0.95));
+    padding: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-content: center;
+}
+
+.rpg-commands button {
+    padding: 14px 10px;
+    background: linear-gradient(180deg, #1a2436 0%, #0c121c 100%);
+    border: 1px solid #2a3a52;
+    color: #c8d8e8;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s, border-color 0.12s;
+}
+
+.rpg-commands button:hover:not(:disabled) { background: #24344a; border-color: #6a8ab0; color: #fff; }
+.rpg-commands button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+    .rpg-bottom { grid-template-columns: 1fr; }
+    .rpg-enemy { width: 140px; min-height: 160px; }
+}
+.stalker-inventory {
+    width: 94vw;
+    height: 90vh;
+    max-width: 1500px;
+    background:
+        linear-gradient(180deg, rgba(28, 24, 18, 0.98) 0%, rgba(12, 10, 7, 0.99) 100%);
+    border: 2px solid #4a3f2a;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), inset 0 0 80px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.stalker-inv-head {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 16px;
+    border-bottom: 2px solid #3a3028;
+    background: linear-gradient(180deg, #241d14 0%, #17120c 100%);
+}
+
+.stalker-title {
+    font-size: 18px;
+    letter-spacing: 6px;
+    color: #d4a04a;
+    font-weight: 700;
+    text-shadow: 2px 2px 0 #000;
+}
+
+.weight-block { flex: 1; max-width: 440px; }
+.weight-label { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 2px; color: #8a7a5a; margin-bottom: 4px; }
+.weight-label b { color: #c8b898; }
+.weight-label b.over { color: #e05a4a; }
+
+.weight-bar { height: 12px; border: 1px solid #3a3028; background: #0b0906; overflow: hidden; }
+.weight-fill { height: 100%; background: linear-gradient(90deg, #6a5a2a, #c9a050); transition: width 0.2s; }
+.weight-fill.over { background: linear-gradient(90deg, #7a2a1a, #e05a4a); }
+
+.stalker-money { color: #d4a04a; font-size: 14px; letter-spacing: 1px; }
+
+.stalker-inv-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 270px 1fr 350px;
+    gap: 12px;
+    padding: 12px;
+}
+
+.stalker-equip-col,
+.stalker-grid-col,
+.stalker-desc-col {
+    min-height: 0;
+    overflow-y: auto;
+    border: 1px solid #2e2620;
+    background: rgba(8, 7, 5, 0.55);
+    padding: 10px;
+}
+
+.stalker-equip-col h4,
+.stalker-section-head {
+    margin: 0 0 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #3a3028;
+    color: #d4a04a;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+.stalker-section-head { display: flex; justify-content: space-between; }
+
+.stalker-equip-slot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    margin-bottom: 6px;
+    border: 1px solid #2e2620;
+    background: #100d09;
+    cursor: pointer;
+    min-height: 52px;
+}
+
+.stalker-equip-slot:hover { border-color: #6a5a2a; }
+.stalker-equip-slot.drop-target { border-color: #d4a04a; box-shadow: 0 0 10px rgba(212, 160, 74, 0.35); }
+
+.slot-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 42px;
+    border: 1px solid #2e2620;
+    background: #0a0806;
+    font-size: 20px;
+}
+
+.slot-icon img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.stalker-equip-slot > span {
+    font-size: 11px;
+    color: #b8a888;
+    line-height: 1.3;
+}
+
+.stalker-stats { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+
+.stalker-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 3px 5px;
+    border-bottom: 1px dotted #241d16;
+    color: #9a8a6a;
+}
+
+.stalker-stat b { color: #d8c8a8; }
+.stalker-stat.danger b { color: #e05a4a; }
+
+.stalker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 5px;
+}
+
+.stalker-cell {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border: 1px solid #3a3028;
+    background: #0c0a07;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.stalker-cell.empty { background: #0a0806; border-color: #241d16; cursor: default; }
+.stalker-cell:not(.empty):hover { border-color: #d4a04a; }
+.stalker-cell.selected { outline: 2px solid #d4a04a; outline-offset: -2px; }
+
+.stalker-cell img { max-width: 88%; max-height: 88%; object-fit: contain; }
+
+.stalker-cell .item-count-badge {
+    position: absolute;
+    right: 3px;
+    bottom: 2px;
+    font-size: 10px;
+    color: #e8d8b8;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 0 3px;
+}
+
+.stalker-hint {
+    margin-top: 10px;
+    font-size: 10px;
+    color: #6f624c;
+    border-top: 1px dashed #2e2620;
+    padding-top: 8px;
+}
+
+.stalker-desc-col .item-details {
+    margin: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.desc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6f624c;
+    text-align: center;
+    gap: 10px;
+}
+
+.desc-empty span { letter-spacing: 3px; font-size: 11px; color: #8a7a5a; }
+.desc-empty p { font-size: 11px; max-width: 220px; line-height: 1.5; }
+
+
+/* --- Сохранения --- */
+.save-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.save-slots .btn-heal { flex: 1 1 120px; }
+
+.saves-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.saves-head h4 { margin: 0; }
+
+.btn-danger.small {
+    padding: 5px 8px;
+    font-size: 10px;
+}
+
+.save-item .save-actions { display: flex; gap: 6px; }
+
+/* --- Кассетный проигрыватель --- */
+.cassette-player {
+    border: 1px solid #4a3f2a;
+    background: linear-gradient(180deg, rgba(30, 24, 16, 0.85), rgba(10, 8, 6, 0.85));
+    padding: 10px;
+}
+
+.cassette-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px dashed #3a3028;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.cassette-head b { color: #d4a04a; letter-spacing: 1px; }
+.cassette-head span { font-size: 10px; color: #8a7a5a; }
+
+.cassette-body {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 12px;
+    align-items: start;
+}
+
+.cassette-gif {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border: 1px solid #3a3028;
+    filter: saturate(0.8);
+    opacity: 0.75;
+}
+
+.cassette-gif.playing {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(212, 160, 74, 0.25);
+}
+
+.cassette-now {
+    color: #e8d8b8;
+    font-size: 13px;
+    letter-spacing: 1px;
+    min-height: 18px;
+}
+
+.cassette-sub { color: #7a6a52; font-size: 10px; margin: 2px 0 8px; }
+
+.cassette-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.cassette-list button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    background: #14110d;
+    border: 1px solid #3a3028;
+    color: #b8a888;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.cassette-list button:hover:not(:disabled) { border-color: #6a5a2a; color: #e0b050; }
+.cassette-list button.active { border-color: #d4a04a; color: #e0b050; }
+.cassette-list button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cassette-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 10px;
+    color: #7a6a52;
+}
+
+.cassette-controls button {
+    padding: 6px 10px;
+    background: #2a2418;
+    border: 1px solid #4a3f2a;
+    color: #d4a04a;
+    font-family: inherit;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+.cassette-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- Громкость --- */
+.volume-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 52px;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 0;
+    font-size: 11px;
+    color: #b8a888;
+}
+
+.volume-row input[type="range"] {
+    width: 100%;
+    accent-color: #d4a04a;
+    cursor: pointer;
+}
+
+.volume-row b { text-align: right; color: #d4a04a; font-size: 11px; }
+

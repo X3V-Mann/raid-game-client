@@ -1,0 +1,17 @@
+export const AVATARS = [
+  { id: "messer",  name: "Мессер" },
+  { id: "degtyarev", name: "Дегтярёв", ext: "jpg" },
+  { id: "mecheniy", name: "Меченый", ext: "jpg" },
+  { id: "shram", name: "Шрам", ext: "jpg" },
+  { id: "bala", name: "Боец 1" },
+  { id: "camo", name: "Боец 2" },
+  { id: "fedya",  name: "Серый" },
+  { id: "gas",  name: "Боец 3" },
+  { id: "gas2",  name: "Боец 4" },
+  { id: "gas3",  name: "Боец 5" },
+  { id: "lisiy",  name: "Пётр" },
+  { id: "prizrak",  name: "Кочерга" },
+  { id: "seva",  name: "Купол" },
+  { id: "usi",  name: "Усатый" },
+  { id: "volk",  name: "Бульдог" },
+];
