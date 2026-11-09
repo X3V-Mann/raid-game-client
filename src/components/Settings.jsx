@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { audio, useAudioState } from "../audio";
+import { isDesktop, desktopGetDisplay, desktopSetDisplay } from "../desktop";
 
 const THEMES = [
   { id: "stalker", name: "Сталкер", desc: "Коричневый, пыльный, ржавый", accent: "#d4a04a" },
@@ -36,8 +37,8 @@ export default function Settings() {
   }, [theme]);
 
   useEffect(() => {
-    if (!window.desktop?.getDisplay) return;
-    window.desktop.getDisplay().then((d) => d && setDisplay(d)).catch(() => {});
+    if (!isDesktop()) return;
+    desktopGetDisplay().then((d) => d && setDisplay(d)).catch(() => {});
   }, []);
 
   return (
@@ -63,7 +64,7 @@ export default function Settings() {
         </div>
       </div>
 
-      {window.desktop?.isDesktop && (
+      {isDesktop() && (
         <div className="settings-block">
           <h4>🖥 Режим экрана (десктоп)</h4>
           <p className="desc">
@@ -72,13 +73,13 @@ export default function Settings() {
           <div className="tabs" style={{ marginTop: 8 }}>
             <button
               className={!display.fullscreen ? "active" : ""}
-              onClick={async () => { try { const d = await window.desktop.setDisplay("windowed"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
+              onClick={async () => { try { const d = await desktopSetDisplay("windowed"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
             >
               Оконный
             </button>
             <button
               className={display.fullscreen ? "active" : ""}
-              onClick={async () => { try { const d = await window.desktop.setDisplay("fullscreen"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
+              onClick={async () => { try { const d = await desktopSetDisplay("fullscreen"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
             >
               Полноэкранный
             </button>

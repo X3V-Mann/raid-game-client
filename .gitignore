@@ -13,9 +13,16 @@ dist
 dist-ssr
 *.local
 
-# Десктоп-сборка (Electron/electron-builder)
+# Десктоп-сборка
 build/
 release/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/*.exe
+src-tauri/binaries/*.dll
+src-tauri/binaries/*.pdb
+src-tauri/binaries/*.json
+src-tauri/binaries/wwwroot/
 
 # Сборка бэкенда
 GameApi/bin/

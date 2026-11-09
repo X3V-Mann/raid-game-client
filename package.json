@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.6.0",
   "type": "module",
-  "main": "electron/main.cjs",
   "description": "Рейд — браузерная survival/extraction-игра (React + ASP.NET Core)",
   "author": "X3V-Mann",
   "scripts": {
@@ -12,10 +11,10 @@
     "build:api": "vite build --outDir GameApi/wwwroot --emptyOutDir",
     "preview": "vite preview",
     "lint": "eslint .",
-    "electron:dev": "electron .",
-    "desktop:prepare": "npm run build:api && dotnet publish GameApi/GameApi.csproj -c Release -r win-x64 --self-contained true -o build/api",
-    "desktop:build": "npm run desktop:prepare && electron-builder --win --x64 --publish never",
-    "desktop:publish": "npm run desktop:prepare && electron-builder --win --x64 --publish always"
+    "tauri": "tauri",
+    "tauri:prepare-api": "npm run build:api && dotnet publish GameApi/GameApi.csproj -c Release -r win-x64 --self-contained true -o src-tauri/binaries && node -e \"const fs=require('fs');const p='src-tauri/binaries';if(fs.existsSync(p+'/GameApi.exe'))fs.copyFileSync(p+'/GameApi.exe',p+'/GameApi-x86_64-pc-windows-msvc.exe')\"",
+    "tauri:build": "npm run tauri:prepare-api && tauri build",
+    "tauri:dev": "tauri dev"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -23,51 +22,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2.12.4",
     "@vitejs/plugin-react": "^6.1.1",
-    "electron": "^45.2.3",
-    "electron-builder": "^26.18.0",
     "eslint": "^10.9.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.5",
     "globals": "^17.11.0",
     "vite": "^8.2.2"
-  },
-  "build": {
-    "appId": "com.x3vmann.raidgame",
-    "productName": "Raid Game",
-    "asar": false,
-    "directories": {
-      "output": "release",
-      "buildResources": "build"
-    },
-    "files": [
-      "electron/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "build/api",
-        "to": "api",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "win": {
-      "target": [
-        "portable"
-      ],
-      "artifactName": "${productName}-Portable-${version}.${ext}"
-    },
-    "portable": {
-      "artifactName": "${productName}-Portable-${version}.${ext}"
-    },
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "X3V-Mann",
-        "repo": "raid-game-client"
-      }
-    ]
   }
 }
