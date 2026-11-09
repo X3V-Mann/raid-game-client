@@ -107,8 +107,11 @@ public class Player
     /// <summary>Игровое время в минутах от старта (День 1, 08:00 = 480).</summary>
     public long GameTimeMinutes { get; set; } = 480;
 
-    /// <summary>Мысли/записи для личного дневника.</summary>
+    /// <summary>Мысли главного героя (автоматические/сюжетные записи).</summary>
     public List<string> JournalThoughts { get; set; } = new();
+
+    /// <summary>Заметки игрока (отдельная вкладка дневника).</summary>
+    public List<string> JournalNotes { get; set; } = new();
 
     /// <summary>Финальный выбор: detonated/hidden/null.</summary>
     public string? EndingChoice { get; set; }

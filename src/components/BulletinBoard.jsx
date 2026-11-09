@@ -45,6 +45,7 @@ export default function BulletinBoard({ act, onToast }) {
                 {q.title}
               </b>
               <p>{q.description}{q.targetLocationName ? ` · 📍 ${q.targetLocationName}` : ""}{q.timeOfDay === 2 || q.timeOfDay === "Night" ? " · 🌙 ночь" : (q.timeOfDay === 1 || q.timeOfDay === "Day" ? " · ☀️ день" : "")}</p>
+              {(q.traderName || q.traderId) && <span>Заказчик: <b>{q.traderName || q.traderId}</b> · сдача повышает репутацию</span>}
               {q.isAccepted && !q.isCompleted && !expired && q.type !== 0 && q.type !== "Fetch" && q.targetCount > 0 && (
                 <span>Прогресс: {q.progress}/{q.targetCount}{dl ? ` · ⏱ ${dl}` : ""}</span>
               )}

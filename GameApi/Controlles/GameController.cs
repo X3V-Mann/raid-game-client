@@ -478,6 +478,7 @@ public class GameController : ControllerBase
         for (int i = 0; i < Math.Max(1, offer.GivesCount); i++)
         {
             var item = _catalog.Create(offer.GivesCode);
+            item.FoundInRaid = true; // предметы по бартеру считаются «из рейда»
             if (!InventoryHelper.AddToInventory(p, item))
             {
                 // Возвращаем деньги, если предмет не влез (ресурсы уже списаны — компенсируем деньгами).
@@ -900,13 +901,17 @@ public class GameController : ControllerBase
             })
             .ToList();
 
+        var current = _questSvc.GetCurrentStory(_state.StoryQuests);
+        var chapterQuests = _state.StoryQuests
+            .Where(q => q.Chapter == (current?.Chapter ?? 0))
+            .OrderBy(q => q.Order)
+            .Where(q => q.IsCompleted || q.IsAccepted || (current != null && q.Id == current.Id))
+            .ToList();
+
         return new
         {
-            current = _questSvc.GetCurrentStory(_state.StoryQuests),
-            chapterQuests = _state.StoryQuests
-                .Where(q => q.Chapter == (_questSvc.GetCurrentStory(_state.StoryQuests)?.Chapter ?? 0))
-                .OrderBy(q => q.Order)
-                .ToList(),
+            current,
+            chapterQuests,
             completed = _state.StoryQuests.Where(q => q.IsCompleted).OrderBy(q => q.Chapter).ThenBy(q => q.Order).ToList(),
             allCount = _state.StoryQuests.Count,
             chapters,
@@ -1112,10 +1117,17 @@ public class GameController : ControllerBase
     public object GetBoard()
     {
         _state.ExpireUrgentQuests();
+        var unlocked = _state.Player.UnlockedLocations;
+        var traders = _state.Traders.ToDictionary(t => t.Id, t => t.Name);
         var list = _state.SideQuests
             .Where(q => !q.IsCompleted || q.IsRepeatable)
+            .Where(q => string.IsNullOrEmpty(q.TargetLocationId) || unlocked.Contains(q.TargetLocationId))
             .OrderByDescending(q => q.IsUrgent)
             .ThenBy(q => q.Order)
+            .Select(q => {
+                q.TraderName = !string.IsNullOrEmpty(q.TraderId) && traders.TryGetValue(q.TraderId, out var tn) ? tn : null;
+                return q;
+            })
             .ToList();
         return new { quests = list, time = _state.GetGameTimeInfo() };
     }
@@ -1198,15 +1210,24 @@ public class GameController : ControllerBase
         var locs = _locations.All.Select(l => new { l.Id, l.Name, l.Tier, l.Description, l.Icon, enemies = l.Enemies.Select(e => new { e.Name, e.Icon, e.BaseHp, e.BaseDamage, e.Ranged }).ToList() }).ToList();
         var items = _catalog.All.Where(i => i.Lootable || i.Type == ItemType.Misc || i.Type == ItemType.Material || i.Type == ItemType.Medicine || i.Type == ItemType.Food || i.Type == ItemType.Drink)
             .Select(i => new { i.Code, i.Name, i.Description, i.Icon, type = i.Type.ToString(), i.Price }).Take(400).ToList();
-        return new { thoughts = _state.Player.JournalThoughts, referenceItems = items, referenceLocations = locs, time = _state.GetGameTimeInfo() };
+        return new { thoughts = _state.Player.JournalThoughts, notes = _state.Player.JournalNotes, referenceItems = items, referenceLocations = locs, time = _state.GetGameTimeInfo() };
     }
 
     [HttpPost("diary/thought")]
     public IActionResult AddThought([FromBody] ThoughtDto dto)
     {
+        // Мысли записывает ГГ (системно); эндпоинт оставлен для совместимости.
         if (!string.IsNullOrWhiteSpace(dto.Text) && !_state.Player.JournalThoughts.Contains(dto.Text))
             _state.Player.JournalThoughts.Add(dto.Text);
         return Ok(new { thoughts = _state.Player.JournalThoughts });
+    }
+
+    [HttpPost("diary/note")]
+    public IActionResult AddNote([FromBody] ThoughtDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.Text) && !_state.Player.JournalNotes.Contains(dto.Text))
+            _state.Player.JournalNotes.Add(dto.Text.Trim());
+        return Ok(new { notes = _state.Player.JournalNotes });
     }
     public record ThoughtDto(string Text);
 

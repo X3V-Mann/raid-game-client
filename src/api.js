@@ -76,6 +76,7 @@ export const api = {
   getBoard: () => req("/quests/board"),
   getDiary: () => req("/diary"),
   addThought: (text) => req("/diary/thought", { method: "POST", body: { text } }),
+  addNote: (text) => req("/diary/note", { method: "POST", body: { text } }),
   getGameTime: () => req("/gametime"),
   acceptQuest: (id) => req(`/quests/${id}/accept`, { method: "POST" }),
   completeQuest: (id) => req(`/quests/${id}/complete`, { method: "POST" }),

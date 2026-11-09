@@ -55,6 +55,14 @@ export default function App() {
     audio.setScene(inMenu ? "menu" : "game");
   }, [inMenu]);
 
+  useEffect(() => {
+    if (!inMenu && !inRaid && tab === "traders") audio.playTraderMusic();
+    else audio.stopTraderMusic();
+    return () => {
+      audio.stopTraderMusic();
+    };
+  }, [tab, inRaid, inMenu]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 2500);

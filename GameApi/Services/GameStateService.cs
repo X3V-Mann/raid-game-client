@@ -149,8 +149,12 @@ public class GameStateService
                 Barter = new()
                 {
                     new() { Id = "prapor_knife", GivesCode = "knife", Cost = { Need("scrap", 2), Need("cloth", 1) }, Money = 200 },
+                    new() { Id = "prapor_machete", GivesCode = "machete", Cost = { Need("scrap", 4), Need("duct_tape", 2) }, Money = 350 },
                     new() { Id = "prapor_ammo9", GivesCode = "ammo_9x19mm", GivesCount = 30, Cost = { Need("scrap", 2), Need("wire", 1) }, Money = 150 },
                     new() { Id = "prapor_ammo545", GivesCode = "ammo_545x39mm", GivesCount = 30, Cost = { Need("scrap", 3), Need("wire", 2) }, Money = 300 },
+                    new() { Id = "prapor_ammo762", GivesCode = "ammo_762x39mm", GivesCount = 30, Cost = { Need("scrap", 4), Need("gunpowder", 1) }, Money = 450 },
+                    new() { Id = "prapor_ammo12", GivesCode = "ammo_12gauge", GivesCount = 20, Cost = { Need("scrap", 3), Need("gunpowder", 1) }, Money = 350 },
+                    new() { Id = "prapor_grenade", GivesCode = "grenade", GivesCount = 1, Cost = { Need("scrap", 5), Need("gunpowder", 2), Need("wire", 1) }, Money = 400 },
                 },
             },
             new()
@@ -170,6 +174,9 @@ public class GameStateService
                     new() { Id = "therapist_antirad", GivesCode = "antirad", Cost = { Need("bandage", 1), Need("battery", 1) }, Money = 100 },
                     new() { Id = "therapist_blood", GivesCode = "blood_bag", Cost = { Need("tourniquet", 1), Need("iodine", 1), Need("bandage_sterile", 1) }, Money = 200 },
                     new() { Id = "therapist_army", GivesCode = "medkit_army", Cost = { Need("medkit", 1), Need("hemostatic", 1), Need("saline", 1) }, Money = 150 },
+                    new() { Id = "therapist_surgical", GivesCode = "surgical_kit", Cost = { Need("medkit_army", 1), Need("morphine", 1), Need("bandage_pack", 1) }, Money = 350 },
+                    new() { Id = "therapist_stim", GivesCode = "stimulant", GivesCount = 2, Cost = { Need("painkiller", 2), Need("saline", 1) }, Money = 120 },
+                    new() { Id = "therapist_bandagepack", GivesCode = "bandage_pack", GivesCount = 2, Cost = { Need("cloth", 3), Need("iodine", 1) } },
                 },
             },
             new()
@@ -187,6 +194,10 @@ public class GameStateService
                     new() { Id = "bartender_stew", GivesCode = "stew", Cost = { Need("bread", 2), Need("sausage", 1) } },
                     new() { Id = "bartender_energy", GivesCode = "energy", GivesCount = 2, Cost = { Need("cola", 2), Need("coffee", 1) } },
                     new() { Id = "bartender_tea", GivesCode = "tea_termos", GivesCount = 1, Cost = { Need("water", 1), Need("honey", 1) }, Money = 20 },
+                    new() { Id = "bartender_honey", GivesCode = "honey", GivesCount = 2, Cost = { Need("water", 2), Need("mint_candy", 2) } },
+                    new() { Id = "bartender_vodka", GivesCode = "vodka", Cost = { Need("water", 2), Need("bread", 1) }, Money = 60 },
+                    new() { Id = "bartender_supply", GivesCode = "canned", GivesCount = 3, Cost = { Need("scrap", 2), Need("cloth", 1) } },
+                    new() { Id = "bartender_mineral", GivesCode = "mineral_water", GivesCount = 3, Cost = { Need("water", 3), Need("salt", 1) } },
                 },
             },
             new()
@@ -218,6 +229,10 @@ public class GameStateService
                     new() { Id = "ragman_vest", GivesCode = "vest", Cost = { Need("cloth", 3), Need("rubber", 2) }, Money = 200 },
                     new() { Id = "ragman_combat", GivesCode = "combat_suit", Cost = { Need("cloth", 5), Need("cement", 2) }, Money = 500 },
                     new() { Id = "ragman_raidpack", GivesCode = "raidpack", Cost = { Need("cloth", 4), Need("zipties", 3), Need("duct_tape", 2) }, Money = 400 },
+                    new() { Id = "ragman_helmet", GivesCode = "helmet_ssh", Cost = { Need("scrap", 4), Need("cloth", 2) }, Money = 150 },
+                    new() { Id = "ragman_backpack", GivesCode = "backpack", Cost = { Need("cloth", 4), Need("paracord", 2) }, Money = 250 },
+                    new() { Id = "ragman_jacket", GivesCode = "jacket", Cost = { Need("cloth", 2), Need("duct_tape", 1) }, Money = 50 },
+                    new() { Id = "ragman_rig", GivesCode = "vest_light", Cost = { Need("cloth", 3), Need("zipties", 4) }, Money = 300 },
                 },
             },
             new()
@@ -233,6 +248,10 @@ public class GameStateService
                     new() { Id = "blacksmith_helmet", GivesCode = "helmet_tactical", Cost = { Need("scrap", 4), Need("cement", 1) } },
                     new() { Id = "blacksmith_toolkit", GivesCode = "toolkit", Cost = { Need("scrap", 3), Need("electronics", 1) } },
                     new() { Id = "blacksmith_sparkplug", GivesCode = "sparkplug", GivesCount = 3, Cost = { Need("scrap", 1), Need("wire", 1) } },
+                    new() { Id = "blacksmith_wire", GivesCode = "wire", GivesCount = 5, Cost = { Need("scrap", 3), Need("duct_tape", 1) } },
+                    new() { Id = "blacksmith_electronics", GivesCode = "electronics", GivesCount = 2, Cost = { Need("capacitors", 2), Need("resistors", 3), Need("wire", 2) } },
+                    new() { Id = "blacksmith_nails", GivesCode = "nails", GivesCount = 10, Cost = { Need("scrap", 2) } },
+                    new() { Id = "blacksmith_fuel", GivesCode = "fuel", Cost = { Need("rubber", 2), Need("scrap", 2) }, Money = 80 },
                 },
             },
             new()
@@ -251,6 +270,10 @@ public class GameStateService
                     new() { Id = "buyer_electronics", GivesCode = "electronics", GivesCount = 2, Cost = { Need("glass", 3), Need("rubber", 2) } },
                     new() { Id = "buyer_geiger", GivesCode = "geiger_counter", Cost = { Need("radio_parts", 1), Need("electronics", 2), Need("battery", 1) }, Money = 300 },
                     new() { Id = "buyer_coffee", GivesCode = "coffee", Cost = { Need("cigarettes", 2), Need("cards", 1) } },
+                    new() { Id = "buyer_radio", GivesCode = "radio_parts", GivesCount = 2, Cost = { Need("wire", 3), Need("capacitors", 2) }, Money = 100 },
+                    new() { Id = "buyer_binoculars", GivesCode = "binoculars", Cost = { Need("glass", 4), Need("scrap", 2) }, Money = 150 },
+                    new() { Id = "buyer_docs", GivesCode = "documents", Cost = { Need("paper_pack", 3), Need("old_documents", 2) }, Money = 400 },
+                    new() { Id = "buyer_gold", GivesCode = "goldchain", Cost = { Need("old_money", 4), Need("watch", 1) }, Money = 250 },
                 },
             },
         };
@@ -342,6 +365,7 @@ public class GameStateService
         Player.UnlockedTraders = new() { "buyer", "bartender" };
         Player.GameTimeMinutes = 480;
         Player.JournalThoughts.Clear();
+        Player.JournalNotes.Clear();
         Player.EndingChoice = null;
         Player.BombHidden = false;
         Player.Perks.Clear();

@@ -11,10 +11,10 @@ function iconImg(src) {
 export default function Diary({ act }) {
   const [story, setStory] = useState(null);
   const [diary, setDiary] = useState(null);
-  const [sub, setSub] = useState("quests"); // quests | thoughts | ref
+  const [sub, setSub] = useState("quests"); // quests | thoughts | notes | ref
   const [refTab, setRefTab] = useState("items");
   const [busy, setBusy] = useState(false);
-  const [thought, setThought] = useState("");
+  const [note, setNote] = useState("");
   const [endingMsg, setEndingMsg] = useState("");
 
   const load = async () => {
@@ -85,7 +85,8 @@ export default function Diary({ act }) {
       <p className="desc">Сюжетные задания, мысли ГГ и справочник. {time ? <span>{time.text}{time.isNight ? " 🌙" : " ☀️"}</span> : null}</p>
       <div className="tabs">
         <button className={sub === "quests" ? "active" : ""} onClick={() => setSub("quests")}>📖 Сюжет ({completed?.length || 0}/{allCount || 0})</button>
-        <button className={sub === "thoughts" ? "active" : ""} onClick={() => setSub("thoughts")}>💭 Мысли</button>
+        <button className={sub === "thoughts" ? "active" : ""} onClick={() => setSub("thoughts")}>💭 Мысли ГГ</button>
+        <button className={sub === "notes" ? "active" : ""} onClick={() => setSub("notes")}>📝 Заметки</button>
         <button className={sub === "ref" ? "active" : ""} onClick={() => setSub("ref")}>📚 Справочник</button>
       </div>
 
@@ -114,12 +115,23 @@ export default function Diary({ act }) {
 
       {sub === "thoughts" && (
         <div>
-          <p className="desc">Мысли ГГ и заметки по ходу сюжета.</p>
+          <p className="desc">Мысли главного героя — записываются сами по ходу событий и сюжета.</p>
+          {(diary?.thoughts||[]).length === 0 ? <p className="desc">Пока тихо… события оставят след здесь.</p> : (
+            <ul>{(diary.thoughts||[]).slice().reverse().map((t,i)=><li key={i}>{t}</li>)}</ul>
+          )}
+        </div>
+      )}
+
+      {sub === "notes" && (
+        <div>
+          <p className="desc">Ваши личные заметки (метки, планы, напоминания).</p>
           <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <input value={thought} onChange={(e)=>setThought(e.target.value)} placeholder="Записать мысль..." style={{flex:1}} />
-            <button onClick={async()=>{ if(!thought.trim()) return; try{await api.addThought(thought.trim()); setThought(""); await load();}catch(e){alert(e.message);} }}>Добавить</button>
+            <input value={note} onChange={(e)=>setNote(e.target.value)} placeholder="Записать заметку..." style={{flex:1}} />
+            <button onClick={async()=>{ if(!note.trim()) return; try{await api.addNote(note.trim()); setNote(""); await load();}catch(e){alert(e.message);} }}>Добавить</button>
           </div>
-          <ul>{(diary?.thoughts||[]).slice().reverse().map((t,i)=><li key={i}>{t}</li>)}</ul>
+          {(diary?.notes||[]).length === 0 ? <p className="desc">Заметок пока нет.</p> : (
+            <ul>{(diary.notes||[]).slice().reverse().map((t,i)=><li key={i}>{t}</li>)}</ul>
+          )}
         </div>
       )}
 

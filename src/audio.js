@@ -25,6 +25,13 @@ const AMBIENT_NIGHT = [
   "/audio/ambient/Zaton Theme. Night.mp3",
 ].map((p) => encodeURI(p));
 
+const TRADER_MUSIC = [
+  "/audio/Traders/CS_Bandits_theme.ogg",
+  "/audio/Traders/CS_Clear_Sky_theme.ogg",
+  "/audio/Traders/CS_Duty_theme.ogg",
+  "/audio/Traders/CS_Freedom_theme.ogg",
+].map((p) => encodeURI(p));
+
 const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0));
 
 function shuffle(arr) {
@@ -64,6 +71,12 @@ class AudioManager {
     this.cassetteAudio.addEventListener("play", () => this.notify());
     this.cassetteAudio.addEventListener("pause", () => this.notify());
     this.cassetteAudio.addEventListener("ended", () => this.onCassetteEnded());
+
+    // Музыка во вкладке торговцев (случайный трек из папки Traders).
+    this.traderActive = false;
+    this.traderAudio = new Audio();
+    this.traderAudio.loop = true;
+    this.traderAudio.preload = "none";
 
     this.applyVolumes();
     this.bindUnlock();
@@ -130,6 +143,7 @@ class AudioManager {
   applyVolumes() {
     this.menuAudio.volume = this.settings.music;
     this.cassetteAudio.volume = this.settings.music;
+    this.traderAudio.volume = this.settings.music;
     this.ambientAudio.volume = this.settings.ambient;
   }
 
@@ -207,7 +221,7 @@ class AudioManager {
   }
 
   playNextAmbient() {
-    if (!this.unlocked || this.cassette) return;
+    if (!this.unlocked || this.cassette || this.traderActive) return;
     // Эмбиент играет в игровой сцене (в меню — музыка убежища)
     if (this.scene !== "game") return;
     this.ensureAmbientQueue();
@@ -219,7 +233,7 @@ class AudioManager {
   }
 
   playAmbient() {
-    if (!this.unlocked || this.scene !== "game" || this.cassette) return;
+    if (!this.unlocked || this.scene !== "game" || this.cassette || this.traderActive) return;
     if (!this.ambientAudio.paused && this.ambientAudio.src) return;
     this.playNextAmbient();
   }
@@ -299,6 +313,46 @@ class AudioManager {
   // Трек закончился — плавный переход (кассета играла в т.ч. вне убежища).
   onCassetteEnded() {
     this.stopCassette(true);
+  }
+
+  playTraderMusic() {
+    if (!this.unlocked) return;
+    if (this.traderActive && this.traderAudio.src && !this.traderAudio.paused) return;
+    this.traderActive = true;
+    this.pauseAmbient();
+    this.pauseMenu();
+    if (this.cassette && !this.cassetteAudio.paused) {
+      this._cassettePausedByTrader = true;
+      this.cassetteAudio.pause();
+    }
+    if (!this.traderAudio.src || this.traderAudio.ended) {
+      this.traderAudio.src = TRADER_MUSIC[Math.floor(Math.random() * TRADER_MUSIC.length)];
+    }
+    this.traderAudio.volume = this.settings.music;
+    this.traderAudio.play().catch(() => {});
+    this.notify();
+  }
+
+  stopTraderMusic() {
+    if (!this.traderActive && !this.traderAudio.src) return;
+    const wasActive = this.traderActive;
+    this.traderActive = false;
+    this.traderAudio.pause();
+    this.traderAudio.currentTime = 0;
+    this.traderAudio.removeAttribute("src");
+    this.traderAudio.load?.();
+    if (this._cassettePausedByTrader && this.cassette) {
+      this._cassettePausedByTrader = false;
+      this.cassetteAudio.play().catch(() => {});
+      this.notify();
+      return;
+    }
+    this._cassettePausedByTrader = false;
+    if (wasActive) {
+      if (this.scene === "game" && !this.cassette) this.playAmbient();
+      else if (this.scene === "menu") this.playMenu(true);
+    }
+    this.notify();
   }
 
   isCassettePlaying() {

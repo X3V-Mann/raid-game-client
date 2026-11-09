@@ -271,16 +271,19 @@ public class QuestService
         // Убить на локации / ночью/днём / босса
         foreach (var loc in Locs)
         {
+            var customer = traders[n % traders.Length];
             bool night = rng.NextDouble()<0.4;
             bool urgent = rng.NextDouble()<0.25;
-            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Зачистка":"Зачистка территории", $"Убить {2+loc.Tier} врагов на локации {loc.Name}{(night?" ночью":"")}.", IcoKillHuman, QuestType.Kill, QuestCategory.Side, 0, n, null,
+            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Зачистка":"Зачистка территории", $"Убить {2+loc.Tier} врагов на локации {loc.Name}{(night?" ночью":"")}.", IcoKillHuman, QuestType.Kill, QuestCategory.Side, 0, n, customer,
                 count:2+loc.Tier, loc:loc.Id, locName:loc.Name, tod: night?QuestTimeOfDay.Night:QuestTimeOfDay.Any, urgent:urgent, urgentMins: urgent?540:0, money:80+loc.Tier*25, xp:35+loc.Tier*12, repeatable:true));
             n++;
+            customer = traders[n % traders.Length];
             urgent = rng.NextDouble()<0.2;
-            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Выживший":"Разведка и выход", $"Побывать на локации {loc.Name} и выйти живым.", IcoGo, QuestType.ExtractAlive, QuestCategory.Side, 0, n, null,
+            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Выживший":"Разведка и выход", $"Побывать на локации {loc.Name} и выйти живым.", IcoGo, QuestType.ExtractAlive, QuestCategory.Side, 0, n, customer,
                 count:1, loc:loc.Id, locName:loc.Name, urgent:urgent, urgentMins: urgent?480:0, money:100+loc.Tier*20, xp:40+loc.Tier*10, repeatable:true));
             n++;
-            list.Add(Q($"side_{n:D3}", "Охота на босса", $"Убить босса на локации {loc.Name}.", IcoKillHuman, QuestType.KillBoss, QuestCategory.Side, 0, n, null,
+            customer = traders[n % traders.Length];
+            list.Add(Q($"side_{n:D3}", "Охота на босса", $"Убить босса на локации {loc.Name}.", IcoKillHuman, QuestType.KillBoss, QuestCategory.Side, 0, n, customer,
                 count:1, loc:loc.Id, locName:loc.Name, boss:true, money:250+loc.Tier*60, xp:120+loc.Tier*25, repeatable:true));
             n++;
         }
@@ -290,7 +293,7 @@ public class QuestService
         for (int i=0;i<2;i++)
         {
             bool urgent = (n%7==0);
-            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Обыск":"Обыск помещений", $"Зайти в здания и обыскать ({bk}) — выполнить вход в здание.", IcoScout, QuestType.EnterBuilding, QuestCategory.Side, 0, n, null,
+            list.Add(Q($"side_{n:D3}", urgent?"СРОЧНО: Обыск":"Обыск помещений", $"Зайти в здания и обыскать ({bk}) — выполнить вход в здание.", IcoScout, QuestType.EnterBuilding, QuestCategory.Side, 0, n, traders[n % traders.Length],
                 count:1+i, bkind:bk, urgent:urgent, urgentMins:urgent?600:0, money:90+i*30, xp:35+i*15, repeatable:true));
             n++;
         }
@@ -305,9 +308,9 @@ public class QuestService
         // доп. варианты по времени суток
         foreach (var loc in Locs.Take(6))
         {
-            list.Add(Q($"side_{n:D3}", "Дневной патруль", $"Убить 3 врагов днём на локации {loc.Name}.", IcoKillHuman, QuestType.Kill, QuestCategory.Side, 0, n, null,
+            list.Add(Q($"side_{n:D3}", "Дневной патруль", $"Убить 3 врагов днём на локации {loc.Name}.", IcoKillHuman, QuestType.Kill, QuestCategory.Side, 0, n, traders[n % traders.Length],
                 count:3, loc:loc.Id, locName:loc.Name, tod:QuestTimeOfDay.Day, money:120, xp:50, repeatable:true)); n++;
-            list.Add(Q($"side_{n:D3}", "Ночная охота", $"Убить 2 мутантов ночью на локации {loc.Name}.", IcoKillMut, QuestType.Kill, QuestCategory.Side, 0, n, null,
+            list.Add(Q($"side_{n:D3}", "Ночная охота", $"Убить 2 мутантов ночью на локации {loc.Name}.", IcoKillMut, QuestType.Kill, QuestCategory.Side, 0, n, traders[n % traders.Length],
                 count:2, loc:loc.Id, locName:loc.Name, tod:QuestTimeOfDay.Night, money:140, xp:55, repeatable:true)); n++;
         }
 

@@ -28,6 +28,8 @@ public class Quest
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
     public string? TraderId { get; set; }
+    /// <summary>Имя заказчика (заполняется для отображения, не обязательно в сохранении).</summary>
+    public string? TraderName { get; set; }
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
     public string Icon { get; set; } = ""; // /task/*.png
