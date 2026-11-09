@@ -187,7 +187,7 @@ public class GameStateService
                 Buys = new() { ItemType.Food, ItemType.Drink }, BuyRate = 0.5,
                 Stock = Stock("bread", "canned", "stew", "sausage", "cheese", "crackers", "noodles",
                               "canned_fish", "honey", "mre", "sandwich", "mint_candy",
-                              "water", "cola", "energy", "juice", "vodka", "tea_termos"),
+                              "water", "mineral_water", "cola", "energy", "juice", "vodka", "tea_termos"),
                 Barter = new()
                 {
                     new() { Id = "bartender_mre", GivesCode = "mre", Cost = { Need("canned", 2), Need("water", 1) }, Money = 50 },
