@@ -281,10 +281,9 @@ export default function Traders({ player, act }) {
   const allowDrop = (e) => e.preventDefault();
 
   const canBarter = (offer) => {
-    const hasItems = offer.cost.every(
+    return offer.cost.every(
       (c) => player.inventory.filter((i) => i.code === c.code).reduce((s, i) => s + (i.count || 1), 0) >= c.count
     );
-    return hasItems && player.money >= (offer.money || 0);
   };
 
   return (
@@ -612,11 +611,7 @@ export default function Traders({ player, act }) {
                               </span>
                             );
                           })}
-                          {!locked && offer.money > 0 && (
-                            <span className={player.money >= offer.money ? "ok" : "no"}>
-                              <RubleIcon size={12} /> {offer.money}
-                            </span>
-                          )}
+
                         </div>
                         <button disabled={!ok || busy} onClick={() => doBarter(offer)}>
                           Обменять

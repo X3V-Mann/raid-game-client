@@ -460,7 +460,6 @@ public class GameController : ControllerBase
                 return BadRequest($"Не хватает: {name} ×{cost.Count}");
             }
         }
-        if (p.Money < offer.Money) return BadRequest($"Нужно {offer.Money} руб.");
 
         // Проверяем место под награду заранее.
         var gift = _catalog.Create(offer.GivesCode);
@@ -471,8 +470,6 @@ public class GameController : ControllerBase
         foreach (var cost in offer.Cost)
             InventoryHelper.RemoveAllByCode(p, cost.Code, cost.Count);
 
-        p.Money -= offer.Money;
-        p.Stats.MoneySpent += offer.Money;
         TraderLoyalty.Add(p, trader.Id, 10);
 
         for (int i = 0; i < Math.Max(1, offer.GivesCount); i++)
@@ -481,8 +478,6 @@ public class GameController : ControllerBase
             item.FoundInRaid = true; // предметы по бартеру считаются «из рейда»
             if (!InventoryHelper.AddToInventory(p, item))
             {
-                // Возвращаем деньги, если предмет не влез (ресурсы уже списаны — компенсируем деньгами).
-                p.Money += offer.Money;
                 return BadRequest("Инвентарь полон");
             }
         }
