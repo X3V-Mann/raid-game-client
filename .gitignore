@@ -16,14 +16,6 @@ dist-ssr
 # Десктоп-сборка
 build/
 release/
-src-tauri/target/
-src-tauri/gen/
-src-tauri/binaries/*.exe
-src-tauri/binaries/*.dll
-src-tauri/binaries/*.pdb
-src-tauri/binaries/*.json
-src-tauri/binaries/wwwroot/
-src-tauri/binaries/_publish/
 
 # Сборка бэкенда
 GameApi/bin/

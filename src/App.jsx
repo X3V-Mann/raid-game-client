@@ -19,7 +19,6 @@ import BulletinBoard from "./components/BulletinBoard";
 import Diary from "./components/Diary";
 import { applyTheme, loadTheme } from "./components/Settings";
 import { audio } from "./audio";
-import { isDesktop, desktopQuit } from "./desktop";
 
 export default function App() {
   const [inMenu, setInMenu] = useState(true);
@@ -227,15 +226,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ marginTop: "auto", padding: "10px", display: "grid", gap: 8 }}>
+        <div style={{ marginTop: "auto", padding: "10px" }}>
           <button className="menu-btn small" onClick={() => setInMenu(true)}>
             🚪 Выйти в меню
           </button>
-          {isDesktop() && (
-            <button className="menu-btn small" onClick={() => { desktopQuit(); }}>
-              ⛔ Выйти из игры
-            </button>
-          )}
         </div>
       </div>
 
