@@ -106,7 +106,7 @@ export default function Diary({ act }) {
             <>
               <h4>Глава {current.chapter}. {chapters?.find((c) => c.chapter === current.chapter)?.title || ""}</h4>
               <p className="desc">Открыто только текущее задание. Следующее появится после выполнения.</p>
-              {(chapterQuests || []).map((q) => <QuestCard key={q.id} q={q} />)}
+              {(chapterQuests || []).slice(0, 1).map((q) => <QuestCard key={q.id} q={q} />)}
             </>
           ) : <div className="quest done"><b>🏁 Текущая сюжетная глава завершена</b><p>Проверьте задания торговцев (Диалог) и доску объявлений.</p></div>}
           <details><summary>Все главы</summary>

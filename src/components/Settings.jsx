@@ -29,10 +29,16 @@ export const loadTheme = () => {
 export default function Settings() {
   const [theme, setTheme] = useState(loadTheme());
   const audioState = useAudioState();
+  const [display, setDisplay] = useState({ fullscreen: false, minWidth: 1024, minHeight: 768 });
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!window.desktop?.getDisplay) return;
+    window.desktop.getDisplay().then((d) => d && setDisplay(d)).catch(() => {});
+  }, []);
 
   return (
     <div className="panel">
@@ -57,11 +63,33 @@ export default function Settings() {
         </div>
       </div>
 
+      {window.desktop?.isDesktop && (
+        <div className="settings-block">
+          <h4>🖥 Режим экрана (десктоп)</h4>
+          <p className="desc">
+            Полный экран или оконный режим. В оконном режиме минимальный размер окна — {display.minWidth || 1024}×{display.minHeight || 768}.
+          </p>
+          <div className="tabs" style={{ marginTop: 8 }}>
+            <button
+              className={!display.fullscreen ? "active" : ""}
+              onClick={async () => { try { const d = await window.desktop.setDisplay("windowed"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
+            >
+              Оконный
+            </button>
+            <button
+              className={display.fullscreen ? "active" : ""}
+              onClick={async () => { try { const d = await window.desktop.setDisplay("fullscreen"); if (d) setDisplay((s) => ({ ...s, ...d })); } catch {} }}
+            >
+              Полноэкранный
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="settings-block">
         <h4>🔊 Звук</h4>
         <p className="desc">
-          Музыка играет только в меню, эмбиент — только в игре. Кассеты в убежище
-          используют громкость музыки.
+          Музыка торговцев играет во вкладке «Торговцы» (эмбиент в это время выключен). Кассеты в убежище используют громкость музыки.
         </p>
 
         {[

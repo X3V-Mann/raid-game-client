@@ -13,6 +13,10 @@ dist
 dist-ssr
 *.local
 
+# Десктоп-сборка (Electron/electron-builder)
+build/
+release/
+
 # Сборка бэкенда
 GameApi/bin/
 GameApi/obj/

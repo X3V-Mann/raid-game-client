@@ -43,7 +43,7 @@ export default function TraderDialogueModal({ traderId, traderName, onClose, onU
             </div>
             <h4>Задания (сюжет/цепочка)</h4>
             <div className="quest-list" style={{maxHeight:360,overflow:"auto"}}>
-              {(data.quests||[]).length === 0 ? <p className="desc">Нет доступных заданий. Новые появятся после выполнения предыдущих (выполненные — во вкладке «Выполненные» дневника).</p> : data.quests.map(q=> (
+              {(data.quests||[]).length === 0 ? <p className="desc">Нет доступных заданий. Новые появятся после выполнения предыдущих (выполненные — во вкладке «Выполненные» дневника).</p> : (data.quests||[]).slice(0,1).map(q=> (
                 <div key={q.id} className={`quest ${q.isCompleted?"done":""}`}>
                   <b>{q.icon ? <img src={q.icon} alt="" style={{width:18,height:18,verticalAlign:"middle",marginRight:4}} onError={(e)=>{e.currentTarget.style.display="none";}}/>:null}{q.title}</b>
                   <p>{q.description}</p>

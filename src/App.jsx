@@ -226,10 +226,15 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ marginTop: "auto", padding: "10px" }}>
+        <div style={{ marginTop: "auto", padding: "10px", display: "grid", gap: 8 }}>
           <button className="menu-btn small" onClick={() => setInMenu(true)}>
             🚪 Выйти в меню
           </button>
+          {window.desktop?.isDesktop && (
+            <button className="menu-btn small" onClick={() => window.desktop.quit()}>
+              ⛔ Выйти из игры
+            </button>
+          )}
         </div>
       </div>
 

@@ -852,11 +852,11 @@ public class GameController : ControllerBase
         return prev == null || prev.IsCompleted;
     }
 
-    private List<Quest> VisibleTraderQuests(string traderId)
+    private List<Quest> VisibleTraderQuests(string? traderId)
     {
         _state.RefreshDailies();
         var open = _state.Quests
-            .Where(q => q.TraderId == traderId)
+            .Where(q => string.Equals(q.TraderId, traderId, StringComparison.OrdinalIgnoreCase))
             .Where(q => !q.IsCompleted || q.IsRepeatable)
             .Where(q => !q.IsDaily || q.AvailableAt == null || q.AvailableAt <= DateTime.Now)
             .Where(IsChainReady)
@@ -874,13 +874,10 @@ public class GameController : ControllerBase
     public object GetQuests()
     {
         _state.RefreshDailies();
-        var list = _state.Quests
-            .Where(q => q.IsRepeatable || !q.IsCompleted)
-            .Where(q => !q.IsDaily || q.AvailableAt == null || q.AvailableAt <= DateTime.Now)
-            .Where(IsChainReady)
-            .OrderBy(q => q.Order)
-            .ToList();
-        return new { quests = list };
+        var list = new List<Quest>();
+        foreach (var traderId in _state.Quests.Select(q => q.TraderId).Distinct(StringComparer.OrdinalIgnoreCase))
+            list.AddRange(VisibleTraderQuests(traderId));
+        return new { quests = list.DistinctBy(q => q.Id).OrderBy(q => q.TraderId).ThenBy(q => q.Order).ToList() };
     }
 
     [HttpGet("quests/trader/{traderId}")]
