@@ -35,6 +35,7 @@
   "build": {
     "appId": "com.x3vmann.raidgame",
     "productName": "Raid Game",
+    "asar": false,
     "directories": {
       "output": "release",
       "buildResources": "build"
