@@ -736,12 +736,13 @@ public class GameController : ControllerBase
 
         int lvl = p.PerkLevel(id);
         if (lvl >= def.MaxLevel) return BadRequest("Навык уже максимального уровня");
-        if (p.PerkPoints < 1) return BadRequest("Нет очков навыков");
+        if (p.PerkPoints < 1) return BadRequest("Нет очков перков");
 
         p.PerkPoints -= 1;
         p.Perks[id] = lvl + 1;
         PlayerProgression.Apply(p, grantPerkPoints: false);
         AchievementCatalog.Evaluate(_state);
+        _state.Persist();
 
         return Ok(new
         {
@@ -810,7 +811,7 @@ public class GameController : ControllerBase
     {
         var p = _state.Player;
         if (!SkillDefs.Any(s => s.Id == id)) return NotFound("Неизвестный навык");
-        if (p.SkillPoints < 1) return BadRequest("Нет очков навыков");
+        if (p.SkillPoints < 1) return BadRequest("Нет очков характеристик");
         int lvl = GetSkill(p, id);
         if (lvl >= 20) return BadRequest("Навык уже максимального уровня");
 

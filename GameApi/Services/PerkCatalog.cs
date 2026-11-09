@@ -8,13 +8,12 @@ public static class PerkCatalog
 {
     public static readonly List<PerkDefinition> All = new()
     {
-        new("agility", "Ловкость", "🏃", "+2 к максимуму AP в тактическом бою за уровень (до 20 AP)", 7),
+        // «Ловкость» и «Уклонение» перенесены в характеристики (дубли удалены из перков).
         new("tough",   "Крепкий орешек", "❤️", "+10 к максимальному запасу здоровья за уровень", 5),
         new("endurance","Выносливость",  "⚡", "+10 к максимальной выносливости за уровень", 5),
         new("marksman","Стрелок",        "🎯", "+2 к урону в бою за уровень", 5),
         new("armor",   "Толстая кожа",   "🛡", "+1 к защите за уровень", 5),
         new("cover",   "Укрытие",        "🧱", "+5% к снижению урона в укрытии за уровень", 5),
-        new("dodge",   "Уклонение",      "🌀", "+5% к шансу уклонения в бою за уровень", 5),
         new("medic",   "Фельдшер",       "💉", "+25% к эффективности медикаментов", 3),
         new("loot",    "Мародёр",        "📦", "+1 предмет в добыче за каждые 2 уровня", 4),
         new("barter",  "Торгаш",         "🤝", "−7% к цене покупки у торговцев за уровень", 3),
@@ -38,8 +37,8 @@ public static class PerkEffects
     public static int MaxStaminaBonus(Player p) =>
         p.PerkLevel("endurance") * 10 + p.Shelter.GymLevel * 5;
 
-    /// <summary>+2 AP за уровень «Ловкости».</summary>
-    public static int ApBonus(Player p) => p.PerkLevel("agility") * 2;
+    /// <summary>Бонус AP от перков (Ловкость-перк удалён; AP даёт характеристика Ловкость).</summary>
+    public static int ApBonus(Player p) => 0;
 
     /// <summary>Дополнительное снижение урона от перка «Укрытие» (0..0.25).</summary>
     public static double CoverReduction(Player p) => Math.Min(0.25, p.PerkLevel("cover") * 0.05);
@@ -48,8 +47,8 @@ public static class PerkEffects
     public static int AdrenalineDamage(Player p) =>
         p.Hp * 2 < p.MaxHp ? p.PerkLevel("adrenaline") * 2 : 0;
 
-    /// <summary>+5% к шансу уклонения за уровень перка (Уклонение).</summary>
-    public static double DodgeChance(Player p) => p.PerkLevel("dodge") * 0.05;
+    /// <summary>Бонус уклонения от перков (Уклонение-перк удалён; уклонение даёт характеристика).</summary>
+    public static double DodgeChance(Player p) => 0.0;
 
     public static double BuyMultiplier(Player p) =>
         Math.Max(0.55, 1.0 - p.PerkLevel("barter") * 0.07 - p.Shelter.WorkshopLevel * 0.02);

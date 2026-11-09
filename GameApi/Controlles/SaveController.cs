@@ -83,6 +83,15 @@ public class SaveController : ControllerBase
         target.GameCompleted = source.GameCompleted;
         target.Freeplay = source.Freeplay;
         target.PerkPoints = source.PerkPoints;
+        target.SkillPoints = source.SkillPoints;
+        target.Luck = source.Luck > 0 ? source.Luck : 1;
+        target.MeleeSkill = source.MeleeSkill > 0 ? source.MeleeSkill : 1;
+        target.RangedSkill = source.RangedSkill > 0 ? source.RangedSkill : 1;
+        target.Accuracy = source.Accuracy > 0 ? source.Accuracy : 1;
+        target.Agility = source.Agility > 0 ? source.Agility : 1;
+        target.Dodge = source.Dodge > 0 ? source.Dodge : 1;
+        target.Parry = source.Parry > 0 ? source.Parry : 1;
+        target.WeaponHandling = source.WeaponHandling > 0 ? source.WeaponHandling : 1;
         target.Perks = source.Perks ?? new();
         target.TraderRep = source.TraderRep ?? new();
         target.Cassettes = source.Cassettes ?? new();

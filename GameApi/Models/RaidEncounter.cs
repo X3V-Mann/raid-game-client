@@ -285,7 +285,7 @@ public static class CombatRules
     public const int RangedRange = 12;
 
     public static int ApMax(Player p) =>
-        Math.Min(MaxAp, BaseAp + PerkEffects.ApBonus(p));
+        Math.Min(MaxAp, BaseAp + PerkEffects.ApBonus(p) + p.AgilityApBonus);
 }
 
 // ============================================================

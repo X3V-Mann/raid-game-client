@@ -100,11 +100,21 @@ export default function PlayerPanel({ player, onAvatarClick, onAvatarChange }) {
             cls="weight"
           />
         </div>
-        {player.perkPoints > 0 && (
-          <div className="row">
-            <span>🧬 Очки навыков</span>
-            <b style={{ color: "#c9a6ff" }}>{player.perkPoints}</b>
-          </div>
+        {(player.skillPoints > 0 || player.perkPoints > 0) && (
+          <>
+            {player.skillPoints > 0 && (
+              <div className="row">
+                <span>🎯 Очки характеристик</span>
+                <b style={{ color: "#7ec8ff" }}>{player.skillPoints}</b>
+              </div>
+            )}
+            {player.perkPoints > 0 && (
+              <div className="row">
+                <span>✨ Очки перков</span>
+                <b style={{ color: "#c9a6ff" }}>{player.perkPoints}</b>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

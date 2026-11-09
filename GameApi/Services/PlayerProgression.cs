@@ -38,6 +38,8 @@ public static class PlayerProgression
     /// </summary>
     public static int Apply(Player p, bool grantPerkPoints = true)
     {
+        MigrateDuplicatePerks(p);
+
         int newLevel = LevelFromXp(Math.Max(0, p.Xp));
         int gained = newLevel - p.Level;
 
@@ -62,5 +64,21 @@ public static class PlayerProgression
         }
 
         return gained;
+    }
+
+    /// <summary>Миграция: перки «Ловкость»/«Уклонение» удалены как дубли характеристик — переносим вложенные уровни в характеристики.</summary>
+    private static void MigrateDuplicatePerks(Player p)
+    {
+        if (p.Perks == null) return;
+        if (p.Perks.TryGetValue("agility", out var agiLvl) && agiLvl > 0)
+        {
+            p.Agility = Math.Min(20, Math.Max(1, p.Agility) + agiLvl * 2);
+            p.Perks.Remove("agility");
+        }
+        if (p.Perks.TryGetValue("dodge", out var dodgeLvl) && dodgeLvl > 0)
+        {
+            p.Dodge = Math.Min(20, Math.Max(1, p.Dodge) + dodgeLvl * 2);
+            p.Perks.Remove("dodge");
+        }
     }
 }

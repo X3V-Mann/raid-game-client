@@ -64,13 +64,13 @@ public class Player
     public int SkillPoints { get; set; } = 0;
 
     /// <summary>Бонус к шансу уклонения от удара (0..1).</summary>
-    public double DodgeChance => Math.Min(0.60, (Agility - 1) * 0.03 + (Dodge - 1) * 0.04 + PerkEffects.DodgeChance(this));
+    public double DodgeChance => Math.Min(0.60, (Agility - 1) * 0.02 + (Dodge - 1) * 0.05);
 
     /// <summary>Шанс парирования/блока (0..1).</summary>
     public double ParryChance => Math.Min(0.45, (Parry - 1) * 0.035 + (Agility - 1) * 0.01);
 
-    /// <summary>Бонус к AP в бою за ловкость (+1 AP за каждые 5 уровней ловкости).</summary>
-    public int AgilityApBonus => (Agility - 1) / 5;
+    /// <summary>Бонус к AP в бою за ловкость (характеристика).</summary>
+    public int AgilityApBonus => (Agility - 1) / 2;
 
     /// <summary>Шанс найти дополнительный предмет при обыске (0..1).</summary>
     public double LootBonus => Math.Min(0.40, (Luck - 1) * 0.05 + PerkEffects.ExtraLootRolls(this) * 0.1);

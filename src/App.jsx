@@ -193,13 +193,14 @@ export default function App() {
     );
   }
 
+  const freePoints = (player.skillPoints || 0) + (player.perkPoints || 0);
   const tabs = [
     ["map", "Карта"],
     ["board", "📌 Доска объявлений"],
     ["traders", "Торговцы"],
     ["shelter", "Убежище"],
     ["story", "📓 Дневник"],
-    ["perks", player.perkPoints > 0 ? `🧬 Навыки (${player.perkPoints})` : "🧬 Навыки"],
+    ["perks", freePoints > 0 ? `🧬 Навыки (${freePoints})` : "🧬 Навыки"],
     ["stats", "📊 Статистика"],
     ["saves", "💾 Сохранения"],
     ["settings", "⚙ Настройки"],
@@ -265,8 +266,8 @@ export default function App() {
             {tab === "traders" && <Traders player={player} act={act} />}
             {tab === "shelter" && <Shelter player={player} act={act} />}
             {tab === "story" && <Diary act={act} />}
-            {tab === "perks" && <Perks act={act} onToast={showToast} />}
-            {tab === "stats" && <StatsTab player={player} act={act} onToast={showToast} />}
+            {tab === "perks" && <Perks act={act} onToast={showToast} player={player} />}
+            {tab === "stats" && <StatsTab player={player} />}
             {tab === "saves" && <Saves onToast={showToast} refreshPlayer={refresh} />}
             {tab === "settings" && <Settings />}
           </>
