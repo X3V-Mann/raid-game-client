@@ -21,4 +21,7 @@ public class Enemy
     public List<Item> Loot { get; set; } = new();
     public int Money { get; set; }
     public bool Looted { get; set; }
+
+    /// <summary>Сколько ходов противник пропустит (дым, оглушение и т.п.).</summary>
+    public int SkipTurns { get; set; }
 }

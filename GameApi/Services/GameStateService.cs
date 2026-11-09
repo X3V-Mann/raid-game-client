@@ -78,11 +78,10 @@ public class GameStateService
             Inventory = new() { catalog.Create("knife") },
         };
 
-        // Регистрируем оружие из Data/weapon_list.json (weapons + traderWeapons).
+        // Регистрируем оружие из Data/weapon_list.json (weapons + traderWeapons), включая гранаты.
         var seenCodes = new HashSet<string>();
         foreach (var w in WeaponCatalog.All.Concat(WeaponCatalog.TraderWeapons))
         {
-            if (string.Equals(w.WeaponClass, "Grenade", StringComparison.OrdinalIgnoreCase)) continue;
             var item = WeaponCatalog.CreateItem(w);
             if (seenCodes.Add(item.Code)) _catalog.Add(item);
         }
@@ -130,6 +129,8 @@ public class GameStateService
             .Select(i => _catalog.Create(i.Code))
             .ToList();
 
+        var grenadeStock = Stock("grenade", "wpn_f1_grenade", "wpn_smoke_grenade");
+
         var traders = new List<Trader>
         {
             new()
@@ -145,6 +146,7 @@ public class GameStateService
                 Stock = Stock("knife", "machete", "sledge")
                     .Concat(weaponStock)
                     .Concat(ammoStock)
+                    .Concat(grenadeStock)
                     .ToList(),
                 Barter = new()
                 {
@@ -155,6 +157,8 @@ public class GameStateService
                     new() { Id = "prapor_ammo762", GivesCode = "ammo_762x39mm", GivesCount = 30, Cost = { Need("scrap", 4), Need("gunpowder", 1) }, Money = 450 },
                     new() { Id = "prapor_ammo12", GivesCode = "ammo_12gauge", GivesCount = 20, Cost = { Need("scrap", 3), Need("gunpowder", 1) }, Money = 350 },
                     new() { Id = "prapor_grenade", GivesCode = "grenade", GivesCount = 1, Cost = { Need("scrap", 5), Need("gunpowder", 2), Need("wire", 1) }, Money = 400 },
+                    new() { Id = "prapor_f1_grenade", GivesCode = "wpn_f1_grenade", GivesCount = 1, Cost = { Need("scrap", 6), Need("gunpowder", 3), Need("wire", 1) }, Money = 550 },
+                    new() { Id = "prapor_smoke_grenade", GivesCode = "wpn_smoke_grenade", GivesCount = 1, Cost = { Need("cloth", 2), Need("chemicals", 1), Need("wire", 1) }, Money = 250 },
                 },
             },
             new()

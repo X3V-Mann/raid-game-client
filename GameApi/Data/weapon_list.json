@@ -2258,6 +2258,7 @@
       "ammoPerShot": 1
     },
     {
+      "code": "f1_grenade",
       "name": "Граната Ф-1",
       "weaponClass": "Grenade",
       "caliber": null,
@@ -2275,6 +2276,7 @@
       "ammoPerShot": 1
     },
     {
+      "code": "rgd5_grenade",
       "name": "Граната РГД-5",
       "weaponClass": "Grenade",
       "caliber": null,
@@ -2292,6 +2294,7 @@
       "ammoPerShot": 1
     },
     {
+      "code": "smoke_grenade",
       "name": "Дымовая граната",
       "weaponClass": "Grenade",
       "caliber": null,

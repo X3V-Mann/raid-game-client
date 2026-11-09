@@ -1196,8 +1196,29 @@ public class RaidController : ControllerBase
         if (Chebyshev(c.PlayerX, c.PlayerY, x, y) > CombatRules.GrenadeRange)
             return $"Слишком далеко (максимум {CombatRules.GrenadeRange} клетки).";
 
-        int blast = Math.Max(12, 20 + c.Tier * 5);
+        bool isSmoke = grenade.Damage <= 0
+            || (grenade.Code?.Contains("smoke", StringComparison.OrdinalIgnoreCase) ?? false)
+            || (grenade.Code?.Contains("дым", StringComparison.OrdinalIgnoreCase) ?? false)
+            || (grenade.Name?.Contains("Дымов", StringComparison.OrdinalIgnoreCase) ?? false)
+            || (grenade.Name?.Contains("Smoke", StringComparison.OrdinalIgnoreCase) ?? false);
+
         int hit = 0;
+        if (isSmoke)
+        {
+            foreach (var e in c.Enemies.Where(e => e.Hp > 0
+                     && Chebyshev(e.X, e.Y, x, y) <= CombatRules.GrenadeRadius))
+            {
+                e.SkipTurns = Math.Max(e.SkipTurns, 2);
+                hit++;
+                AddLog(c, $"💨 {e.Name}: в дыму (пропустит 2 хода)");
+            }
+            InventoryHelper.RemoveFromInventory(p, grenade.Id, 1);
+            AddLog(c, $"💨 {grenade.Name}: завеса дыма (задето {hit}).");
+            c.LastEvent = hit > 0 ? $"Дым: {hit} цел." : "Дымовая завеса.";
+            return null;
+        }
+
+        int blast = Math.Max(12, 20 + c.Tier * 5);
         foreach (var e in c.Enemies.Where(e => e.Hp > 0
                  && Chebyshev(e.X, e.Y, x, y) <= CombatRules.GrenadeRadius))
         {
@@ -1222,6 +1243,14 @@ public class RaidController : ControllerBase
     {
         enemy.Ap = enemy.ApMax;
         c.LastAttackerId = null;
+
+        if (enemy.SkipTurns > 0)
+        {
+            enemy.SkipTurns--;
+            AddLog(c, $"💨 {enemy.Name} пропускает ход (дым).");
+            c.LastEvent = $"{enemy.Name}: пропуск хода";
+            return;
+        }
 
         int dist = Chebyshev(enemy.X, enemy.Y, c.PlayerX, c.PlayerY);
         bool los = HasLineOfSight(c, enemy.X, enemy.Y, c.PlayerX, c.PlayerY);
