@@ -945,7 +945,7 @@ public class GameController : ControllerBase
         }
         if (q.IsCompleted) return BadRequest("Задание уже выполнено");
 
-        if (q.IsStory)
+        if (q.IsStory && q.Category == QuestCategory.Story)
         {
             var current = _questSvc.GetCurrentStory(_state.StoryQuests);
             if (current == null || current.Id != q.Id)
@@ -1071,7 +1071,7 @@ public class GameController : ControllerBase
         if (q.IsDaily)
             q.AvailableAt = DateTime.Now.Date.AddDays(1);
 
-        if (q.IsStory)
+        if (q.IsStory && q.Category == QuestCategory.Story)
         {
             var next = _questSvc.GetCurrentStory(_state.StoryQuests);
             if (next != null && !next.IsCompleted) next.IsAccepted = true;
