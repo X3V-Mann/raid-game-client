@@ -95,6 +95,7 @@ async function ensureApi() {
       ASPNETCORE_URLS: url,
       ASPNETCORE_CONTENTROOT: contentRoot,
       ASPNETCORE_ENVIRONMENT: isDev ? "Development" : "Production",
+      RAID_SAVE_DIR: saveDir,
     },
     stdio: "ignore",
     windowsHide: true,

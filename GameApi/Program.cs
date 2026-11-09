@@ -50,8 +50,11 @@ if (!string.IsNullOrEmpty(wwwroot) && File.Exists(Path.Combine(wwwroot, "index.h
 app.MapControllers();
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
-// Загружаем автосейв из папки проекта (GameApi/saves), а не из текущего каталога процесса.
-var saveDir = Path.Combine(app.Environment.ContentRootPath, "saves");
+// Папка сохранений: можно переопределить (десктоп/portable), иначе рядом с контентом API.
+var saveDir = Environment.GetEnvironmentVariable("RAID_SAVE_DIR");
+if (string.IsNullOrWhiteSpace(saveDir))
+    saveDir = Path.Combine(app.Environment.ContentRootPath, "saves");
+Directory.CreateDirectory(saveDir);
 using (var scope = app.Services.CreateScope())
 {
     var stateService = scope.ServiceProvider.GetRequiredService<GameStateService>();

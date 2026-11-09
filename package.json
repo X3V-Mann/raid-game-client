@@ -54,13 +54,12 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        "portable"
       ],
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
     "publish": [
       {
