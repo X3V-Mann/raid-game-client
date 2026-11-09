@@ -192,7 +192,7 @@ public class QuestService
             ("bartender_3","Охота на мутантов","Принеси части мутантов (сало плоти).",IcoMats,QuestType.Fetch,2,"flesh_fat","Сало плоти",null,null,false,160,60,null,null,null),
             ("bartender_4","Чистка Кордона","Убей 4 мутантов на Кордоне.",IcoKillMut,QuestType.Kill,4,null,null,"kordon","Кордон",false,180,70,null,null,null),
             ("bartender_5","Важные бумаги","Принеси записи выжившего.",IcoNotes,QuestType.Fetch,1,"quest_notes","Записи выжившего",null,null,false,220,80,null,null,null),
-            ("bartender_6","Дорога на Завод","Побывай на Заводе.",IcoGo,QuestType.VisitLocation,1,null,null,"factory","Завод",false,240,90,null,null,null),
+            ("bartender_6","Дорога на Завод","Побывай на Заводе.",IcoGo,QuestType.VisitLocation,1,null,null,"factory","Завод",false,240,90,"factory",null,"Бармен дал наводку — Завод открыт."),
             ("bartender_7","Секреты цехов","Принеси документы с завода.",IcoDocs,QuestType.Fetch,1,"quest_factory_docs","Документы с завода",null,null,false,350,130,null,null,null),
             ("bartender_8","Ночной разговор","Убей 2 врагов ночью в Городе.",IcoKillHuman,QuestType.Kill,2,null,null,"city","Город",false,260,90,null,null,null),
             ("bartender_9","Перед бурей","Принеси тушёнку (из рейда) — запасы.",IcoItem,QuestType.Fetch,2,"canned","Тушёнка",null,null,false,200,80,null,null,null),

@@ -1,7 +1,7 @@
 {
   "name": "raid-game-client",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.5",
   "type": "module",
   "description": "Рейд — браузерная survival/extraction-игра (React + ASP.NET Core)",
   "author": "X3V-Mann",

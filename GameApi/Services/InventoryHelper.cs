@@ -14,12 +14,17 @@ public static class InventoryHelper
 
     public static bool AddToInventory(Player p, Item item)
     {
+        // Патроны никогда не считаются «из рейда».
+        if (item.Type == ItemType.Ammo) item.FoundInRaid = false;
+
         if (IsStackable(item))
         {
-            // Не смешиваем «рейдовое» и «не рейдовое» в один стак — иначе теряется метка «из рейда».
-            var existing = p.Inventory.FirstOrDefault(i => i.Code == item.Code && i.FoundInRaid == item.FoundInRaid);
+            // Не смешиваем «рейдовое» и «не рейдовое» в один стак — иначе теряется метка «из рейда». Патроны всегда объединяются.
+            var existing = p.Inventory.FirstOrDefault(i => i.Code == item.Code
+                && (item.Type == ItemType.Ammo || i.FoundInRaid == item.FoundInRaid));
             if (existing != null)
             {
+                if (item.Type == ItemType.Ammo) existing.FoundInRaid = false;
                 existing.Count += item.Count;
                 RegisterCassette(p, item);
                 return true;

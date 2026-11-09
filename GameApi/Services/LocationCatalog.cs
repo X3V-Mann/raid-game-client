@@ -66,7 +66,7 @@ public class LocationCatalog
             Description = "Ржавые цеха. Больше врагов, но и лут ценнее.",
             Image = "/locations/factory.jpg", Icon = "🏭", BossChance = 0.12,
             BossName = "Цеховик (Бригадир наёмников)", BossIcon = "/bosses/Цеховик.png",
-            UnlockQuestId = "prapor_4", UnlockHint = "Откроется после цепочки Прапора",
+            UnlockQuestId = "bartender_6", UnlockHint = "Откроется после цепочки Бармена (задание «Дорога на Завод»)",
             RarityWeights = new() { [Rarity.Common] = 40, [Rarity.Uncommon] = 30, [Rarity.Rare] = 18, [Rarity.Epic] = 9, [Rarity.Legendary] = 3 },
             Enemies = new()
             {

@@ -10,7 +10,7 @@ const TRADER_PORTRAITS = {
   prapor: { image: "/traders/prapor.png", emoji: "🪖", label: "Шматко", sub: "Оружие и боеприпасы" },
   therapist: { image: "/traders/therapist.png", emoji: "💉", label: "Сергей", sub: "Только медицина" },
   ragman: { image: "/traders/ragman.png", emoji: "🧥", label: "Сидорович", sub: "Экипировка и рюкзаки" },
-  blacksmith: { image: "/traders/blacksmith.png", emoji: "⚒", label: "Гриша", sub: "Броня и материалы" },
+  blacksmith: { image: "/traders/blacksmith.png", emoji: "⚒", label: "Кузнец", sub: "Броня и материалы" },
   buyer: { image: "/traders/buyer.png", emoji: "🕵", label: "Скупщик", sub: "Скупает всё подряд" },
   bartender: { image: "/traders/barman.png", emoji: "🍺", label: "Бармен", sub: "Еда и напитки" },
 };
@@ -19,8 +19,8 @@ const TRADER_PORTRAITS = {
 const TRADER_TAB_LABELS = {
   prapor: "Шматко",
   therapist: "Медик",
-  ragman: "Сидорович",
-  blacksmith: "Гриша",
+  ragman: "Барахольщик",
+  blacksmith: "Кузнец",
   buyer: "Скупщик",
   bartender: "Бармен",
 };

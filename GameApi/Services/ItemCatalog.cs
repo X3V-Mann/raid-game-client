@@ -556,6 +556,7 @@ public class ItemCatalog
             Lootable = true,
             Caliber = caliber,
             LootTier = WeaponCatalog.LootTierForDamage(damage),
+            FoundInRaid = false,
         };
         _templates.Add(item);
         return Create(item.Code);

@@ -44,6 +44,34 @@ public class GameStateService
         return new { day, hour = h, minute = m, totalMinutes = t, isNight = night, text = $"День {day}, {h:00}:{m:00}" };
     }
 
+    /// <summary>Открывает локации, привязанные к уже полученным/доступным заданиям (напр. Завод при наличии задания «побывать на Заводе»).</summary>
+    public void EnsureQuestBasedLocationUnlocks()
+    {
+        var p = Player;
+        if (p == null) return;
+        bool changed = false;
+
+        // Завод: задание уже есть (цепочка Бармена дошла до bartender_6 или он принят; сюжет s1_10 текущий/принят).
+        if (!p.UnlockedLocations.Contains("factory"))
+        {
+            var b5 = AllQuests().FirstOrDefault(q => q.Id == "bartender_5");
+            var b6 = AllQuests().FirstOrDefault(q => q.Id == "bartender_6");
+            bool bartenderGate = b6 != null && !b6.IsCompleted && ((b5?.IsCompleted ?? false) || b6.IsAccepted);
+
+            var currentStory = _quests.GetCurrentStory(StoryQuests);
+            bool storyGate = (currentStory?.Id == "s1_10" && !currentStory.IsCompleted)
+                             || AllQuests().Any(q => q.Id == "s1_10" && q.IsAccepted && !q.IsCompleted);
+
+            if (bartenderGate || storyGate)
+            {
+                p.UnlockedLocations.Add("factory");
+                changed = true;
+            }
+        }
+
+        if (changed) Persist();
+    }
+
     public void AdvanceGameTime(int minutes)
     {
         if (minutes <= 0) return;
@@ -137,7 +165,29 @@ public class GameStateService
             {
                 Id = "prapor", Name = "Прапор", Description = "Оружие на любой вкус.",
                 Image = "/traders/prapor.png",
-                Dialogue = new(){ new(){Speaker="Прапор",Text="Оружие есть. Вопросы — после дела."}, new(){Speaker="Прапор",Text="На Заводе засели серьёзные люди. Без подготовки не суйся."}, new(){Speaker="Прапор",Text="Принеси то, что нужно, — и получишь доступ к лучшему стволу."} },
+                Dialogue = new(){ new(){Speaker="Прапор",Text="Оружие есть. Вопросы — после дела."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Прапор", Text="Подходи, не мямли. Стволы, патроны, гранаты — всё по назначению. Что тебе?", Choices = {
+                        new() { Text="Нужна работа.", NextId="work" },
+                        new() { Text="Что за обстановка на Заводе?", NextId="factory" },
+                        new() { Text="Какое оружие посоветуешь новичку?", NextId="advice" },
+                        new() { Text="Ничего, осматриваюсь.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Прапор", Text="Дела есть. Иногда грязные, иногда просто опасные. Оплата честная — если вернёшься.", Choices = {
+                        new() { Text="Я берусь. Давай задачу.", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Прапор", Text="Так-то лучше. Проверю исполнение — и разговор будет другой.", Choices = {
+                        new() { Text="Сделаю.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="factory", Speaker="Прапор", Text="Завод — мясорубка. Бандиты, странные люди с хорошей экипировкой и обломки старых цехов. Без плана и патронов туда лучше не лезть.", Choices = {
+                        new() { Text="Учту.", NextId="root" },
+                    }},
+                    new() { Id="advice", Speaker="Прапор", Text="Новичку? Дробовик или простой автомат и башкой думать. Самый крутой ствол не спасёт, если полез в открытую на троих.", Choices = {
+                        new() { Text="Справедливо.", NextId="root" },
+                    }},
+                },
                 // Прапор — оружейный магазин: его стволы должны стоять в ценах melee 300–1000 / огнестрел 1100+,
                 // поэтому базовую стоимость оружия у него смещаем ниже (снаряжение у «Старьёвщика» дороже — ×1.6 в ItemCatalog).
                 Buys = new() { ItemType.WeaponMelee, ItemType.WeaponRanged, ItemType.Ammo },
@@ -165,8 +215,30 @@ public class GameStateService
             {
                 Id = "therapist", Name = "Сергей", Description = "Только медицина: перевязка, лекарства и аптечки.",
                 Image = "/traders/therapist.png",
-                Dialogue = new(){ new(){Speaker="Сергей",Text="Покажи раны. И без героизма."}, new(){Speaker="Сергей",Text="После рейда — сначала ко мне, потом к Бармену."}, new(){Speaker="Сергей",Text="Части мутантов опасны, но в умелых руках — источник данных и товара."} },
-                Buys = new() { ItemType.Medicine }, BuyRate = 0.5,
+                Dialogue = new(){ new(){Speaker="Сергей",Text="Покажи раны. И без героизма."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Сергей", Text="Живой? Уже неплохо. Показывай, что там у тебя — раны сами не зарастут, особенно в Зоне.", Choices = {
+                        new() { Text="Нужна какая-нибудь помощь/работа?", NextId="work" },
+                        new() { Text="Какие опасности в Зоне кроме пуль?", NextId="lore" },
+                        new() { Text="Чем мутанты опасны?", NextId="mutants" },
+                        new() { Text="Я в порядке.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Сергей", Text="Помощь нужна всегда: бинты, лекарства, образцы. Если принесёшь нужное — и тебе выгода, и другим выжившим легче.", Choices = {
+                        new() { Text="Хорошо, что от меня требуется?", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Сергей", Text="Договорились. Только аккуратнее — я врач, но чудеса делаю редко.", Choices = {
+                        new() { Text="Постараюсь вернуться целым.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="lore", Speaker="Сергей", Text="Кровотечение, инфекции, голод, усталость. Иногда самая глупая царапина после рейда становится настоящей проблемой. Не пренебрегай аптечкой.", Choices = {
+                        new() { Text="Буду иметь в виду.", NextId="root" },
+                    }},
+                    new() { Id="mutants", Speaker="Сергей", Text="Они непредсказуемы. Одни бьют в лоб, другие заражают или калечат. Но их части иногда полезны — для исследований и обмена. Только брать их лучше осторожно.", Choices = {
+                        new() { Text="Понятно.", NextId="root" },
+                    }},
+                },
+                Buys = new() { ItemType.Medicine }, BuyRate = 3.375, PriceMultiplier = 6.75,
                 Stock = Stock("bandage", "bandage_sterile", "bandage_pack", "iodine", "vaseline",
                               "painkiller", "painkiller_strong", "morphine", "hemostatic", "saline",
                               "tourniquet", "splint", "vitamins",
@@ -187,8 +259,35 @@ public class GameStateService
             {
                 Id = "bartender", Name = "Бармен", Description = "Еда, напитки и тёплый уголок.",
                 Image = "/traders/barman.png",
-                Dialogue = new(){ new(){Speaker="Бармен",Text="Снова ты. Садись, рассказывай."}, new(){Speaker="Бармен",Text="Я помню тебя — и помню, что за тобой шли. Груз был непростой."}, new(){Speaker="Бармен",Text="Хочешь правду? Сначала помоги Зоне помочь тебе. Части мутантов, слухи, документы — всё в дело."} },
-                Buys = new() { ItemType.Food, ItemType.Drink }, BuyRate = 0.5,
+                Dialogue = new(){ new(){Speaker="Бармен",Text="Снова ты. Садись, рассказывай."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Бармен", Text="Снова ты. Садись, наливаю. В Зоне живых гостей мало — и все с историями.", Choices = {
+                        new() { Text="Есть работа для меня?", NextId="work" },
+                        new() { Text="Что слышно в Зоне?", NextId="lore" },
+                        new() { Text="Расскажи про тот груз...", NextId="cargo" },
+                        new() { Text="Поговорим позже.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Бармен", Text="Работа всегда найдётся. То припасы притащить, то тварей отогнать. Главное — вернуться живым, остальное приложится.", Choices = {
+                        new() { Text="Берусь. Что нужно сделать?", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Бармен", Text="Вот и славно. Детали — в задании. И не геройствуй зря: мёртвые заказов не закрывают.", Choices = {
+                        new() { Text="Понял.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="lore", Speaker="Бармен", Text="Слышно разное. На Кордоне сталкеры нервничают, на Заводе кто-то снова роет цеха. А по ночам в Городе лучше не светиться — там теперь не только бандиты.", Choices = {
+                        new() { Text="Что за люди на Заводе?", NextId="factory" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="factory", Speaker="Бармен", Text="Наёмники, говорят. Аккуратные, вооружённые, без лишних разговоров. Такие просто так по Зоне не гуляют — значит, кто-то хорошо платит.", Choices = {
+                        new() { Text="Понятно.", NextId="root" },
+                    }},
+                    new() { Id="cargo", Speaker="Бармен", Text="Ты спрашиваешь опасные вещи. Груз был непростой, и за ним шли серьёзные люди. Помоги мне с парой дел — и я расскажу больше.", Choices = {
+                        new() { Text="Есть работа для меня?", NextId="work" },
+                        new() { Text="Вернёмся к этому позже.", NextId="root" },
+                    }},
+                },
+                Buys = new() { ItemType.Food, ItemType.Drink }, BuyRate = 3.5, PriceMultiplier = 7.0,
                 Stock = Stock("bread", "canned", "stew", "sausage", "cheese", "crackers", "noodles",
                               "canned_fish", "honey", "mre", "sandwich", "mint_candy",
                               "water", "mineral_water", "cola", "energy", "juice", "vodka", "tea_termos"),
@@ -208,7 +307,29 @@ public class GameStateService
             {
                 Id = "ragman", Name = "Сидорович", Description = "Экипировка и рюкзаки.",
                 Image = "/traders/ragman.png",
-                Dialogue = new(){ new(){Speaker="Сидорович",Text="Одежда, броня, рюкзаки — выбирай, пока жив."}, new(){Speaker="Сидорович",Text="Хороший костюм не спасёт от глупости, но от пули — иногда да."} },
+                Dialogue = new(){ new(){Speaker="Сидорович",Text="Одежда, броня, рюкзаки — выбирай, пока жив."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Сидорович", Text="Подходи, выбирай. Броня, шлем, рюкзак — всё, что между тобой и могилой. Дёшево не обещаю, но вещь честная.", Choices = {
+                        new() { Text="Есть для меня работа?", NextId="work" },
+                        new() { Text="Что лучше взять в рейд?", NextId="advice" },
+                        new() { Text="Как дела на Барахолке?", NextId="lore" },
+                        new() { Text="Пока просто смотрю.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Сидорович", Text="Работа найдётся. То ткань нужна, то кто-то бронежилет не донёс из рейда. Сделаешь — будем договариваться.", Choices = {
+                        new() { Text="Что нужно?", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Сидорович", Text="Вот и договорились. Задание смотри в списке. Вернёшься с добычей — поговорим по-другому.", Choices = {
+                        new() { Text="Иду.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="advice", Speaker="Сидорович", Text="Смотри по задаче. Лёгкий выход — взял рюкзак побольше и тихо. Зачистка — броня и шлем решают. А главное — не бери того, что не унесёшь.", Choices = {
+                        new() { Text="Учту.", NextId="root" },
+                    }},
+                    new() { Id="lore", Speaker="Сидорович", Text="Дела как в Зоне: сегодня есть товар, завтра стрельба на подходах. Народ всё равно тащит хабар — жить-то надо. Так что Барахолка стоит, пока стоим мы.", Choices = {
+                        new() { Text="Бывай.", NextId="root" },
+                    }},
+                },
                 Buys = new() { ItemType.Helmet, ItemType.Armor, ItemType.Backpack }, BuyRate = 0.5,
                 Stock = Stock("cap", "helmet_ssh", "helmet_tactical", "helmet_altyn", "helmet_exo",
                               "jacket", "cloak", "vest", "combat_suit", "vest_heavy", "sphere", "exo",
@@ -243,8 +364,30 @@ public class GameStateService
             {
                 Id = "blacksmith", Name = "Кузнец", Description = "Броня и материалы.",
                 Image = "/traders/blacksmith.png",
-                Dialogue = new(){ new(){Speaker="Кузнец",Text="Принеси металл — сделаю, что смогу."}, new(){Speaker="Кузнец",Text="Электроника, пайка, инструмент — без этого убежище не живёт."} },
-                Buys = new() { ItemType.Material }, BuyRate = 0.5,
+                Dialogue = new(){ new(){Speaker="Кузнец",Text="Принеси металл — сделаю, что смогу."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Кузнец", Text="Заходи. Если железо, провода, инструменты — найдём общий язык. Без дела в мастерской не стою.", Choices = {
+                        new() { Text="Есть работа?", NextId="work" },
+                        new() { Text="Что тебе сейчас нужнее всего?", NextId="need" },
+                        new() { Text="Совет по снаряге?", NextId="advice" },
+                        new() { Text="Заглянул просто так.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Кузнец", Text="Работы хватает. Материалов вечно не хватает. Принесёшь нужное — отблагодарю, а иногда и полезную вещь подгоню.", Choices = {
+                        new() { Text="Что принести?", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Кузнец", Text="Вот это разговор. Детали в задании. Главное — не тащи совсем хлам, мне толк нужен.", Choices = {
+                        new() { Text="Принесу.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="need", Speaker="Кузнец", Text="Металлолом, провода, электроника — основа всего. С этим и броню подлатать можно, и убежище держать на плаву.", Choices = {
+                        new() { Text="Понял.", NextId="root" },
+                    }},
+                    new() { Id="advice", Speaker="Кузнец", Text="Снаряга должна работать, а не красиво блестеть. Починил вовремя — уже спасся один раз. И вес считай: перегруз в рейде убивает не хуже пули.", Choices = {
+                        new() { Text="Дельный совет.", NextId="root" },
+                    }},
+                },
+                Buys = new() { ItemType.Material }, BuyRate = 3.625, PriceMultiplier = 7.25,
                 Stock = Stock("scrap", "cloth", "wire", "battery", "cement", "glass", "rubber", "electronics",
                               "fuel", "toolkit", "nails", "duct_tape", "zipties", "kerosene", "propane", "sparkplug"),
                 Barter = new()
@@ -262,8 +405,31 @@ public class GameStateService
             {
                 Id = "buyer", Name = "Скупщик", Description = "Скупает всё подряд. Дорого продаёт хлам.",
                 Image = "/traders/buyer.png",
-                BuysEverything = true, BuyRate = 0.25, PriceMultiplier = 1.6,
-                Dialogue = new(){ new(){Speaker="Скупщик",Text="Ты живой. Уже хорошо. В этой зоне это редкость."}, new(){Speaker="Скупщик",Text="Память дырявая? Бывает. Но долг и груз — вещи материальные. Ищи следы."}, new(){Speaker="Скупщик",Text="Принеси что-нибудь ценное — и я открою тебе нужные двери."} },
+                BuysEverything = true, BuyRate = 2.5, PriceMultiplier = 10.0,
+                Dialogue = new(){ new(){Speaker="Скупщик",Text="Ты живой. Уже хорошо. В этой зоне это редкость."} },
+                DialogueTree = new()
+                {
+                    new() { Id="root", Speaker="Скупщик", Text="О, знакомое лицо... или незнакомое. В Зоне это быстро меняется. Что принёс — интересное или просто мусор?", Choices = {
+                        new() { Text="Есть дело/работа?", NextId="work" },
+                        new() { Text="Что ценится в Зоне?", NextId="value" },
+                        new() { Text="Ты много знаешь. Что насчёт прошлого груза?", NextId="cargo" },
+                        new() { Text="Просто смотрю товар.", Action="close" },
+                    }},
+                    new() { Id="work", Speaker="Скупщик", Text="Дела есть. Я люблю, когда кто-то делает грязную работу, а я получаю полезный результат. Взаимовыгодно, если ты понимаешь намёки.", Choices = {
+                        new() { Text="Говори, что нужно.", Action="accept_current_quest", NextId="work_ok" },
+                        new() { Text="Назад.", NextId="root" },
+                    }},
+                    new() { Id="work_ok", Speaker="Скупщик", Text="Умница. Принесёшь — обсудим цену твоей удачи. Задание уже ждёт.", Choices = {
+                        new() { Text="Договорились.", Action="talk", NextId="root" },
+                    }},
+                    new() { Id="value", Speaker="Скупщик", Text="Ценится то, что редко и работает: документы, электроника, украшения, артефакты. Но и обычный хлам куплю — дёшево, конечно. У меня тут не благотворительность.", Choices = {
+                        new() { Text="Ясно.", NextId="root" },
+                    }},
+                    new() { Id="cargo", Speaker="Скупщик", Text="Про груз слухи ходят разные. Кто-то говорит — военные, кто-то — наёмники, кто-то — совсем чужие деньги. Следы есть, но за ответы обычно платят. Или работают.", Choices = {
+                        new() { Text="Есть дело/работа?", NextId="work" },
+                        new() { Text="Вернёмся к этому.", NextId="root" },
+                    }},
+                },
                 Stock = Stock("watch", "amber", "goldchain", "icon", "artifact", "documents",
                               "coffee", "cigarettes", "chocolate", "dogtags", "medal", "cards",
                               "harmonica", "compass", "binoculars", "camera", "radio_parts", "geiger_counter",
@@ -397,13 +563,22 @@ public class GameStateService
         ResetQuests();
     }
 
-    /// <summary>Смерть игрока: теряется всё, кроме оружия ближнего боя.</summary>
+    /// <summary>Смерть игрока: теряется всё, кроме оружия ближнего боя и квестовых/сюжетных предметов.</summary>
     public Player KillPlayer()
     {
         var p = Player;
+        var keepQuestItems = p.Inventory
+            .Where(i => i.Code.StartsWith("quest_", StringComparison.OrdinalIgnoreCase)
+                     || i.Code.StartsWith("q_", StringComparison.OrdinalIgnoreCase)
+                     || i.Code.StartsWith("boss_", StringComparison.OrdinalIgnoreCase)
+                     || i.Code.StartsWith("art_", StringComparison.OrdinalIgnoreCase))
+            .Select(i => i)
+            .ToList();
+        foreach (var qi in keepQuestItems) qi.FoundInRaid = true;
         p.WeaponRanged = null;
         p.Helmet = null; p.Armor = null; p.Suit = null; p.Backpack = null;
         p.Inventory.Clear();
+        foreach (var qi in keepQuestItems) p.Inventory.Add(qi);
         if (p.WeaponMelee != null) p.Inventory.Add(p.WeaponMelee);
         p.WeaponMelee = null;
         p.Suit = _catalog.Create("suit_hoodie");

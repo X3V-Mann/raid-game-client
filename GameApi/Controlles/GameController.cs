@@ -24,6 +24,7 @@ public class GameController : ControllerBase
         WeaponCatalog.RefreshPlayerWeapons(_state.Player);
         InventoryHelper.SyncCassettes(_state.Player);
         InventoryHelper.SyncLegacyNames(_state.Player);
+        _state.EnsureQuestBasedLocationUnlocks();
         AchievementCatalog.Evaluate(_state);
         return _state.Player;
     }
@@ -958,6 +959,7 @@ public class GameController : ControllerBase
         q.IsFailed = false;
         if (q.IsUrgent && q.UrgentDurationMinutes > 0)
             q.DeadlineGameMinutes = _state.Player.GameTimeMinutes + q.UrgentDurationMinutes;
+        UnlockLocationOnAccept(q);
         return Ok(new { accepted = true, deadline = q.DeadlineGameMinutes, time = _state.GetGameTimeInfo() });
     }
 
@@ -1075,7 +1077,11 @@ public class GameController : ControllerBase
         if (q.IsStory && q.Category == QuestCategory.Story)
         {
             var next = _questSvc.GetCurrentStory(_state.StoryQuests);
-            if (next != null && !next.IsCompleted) next.IsAccepted = true;
+            if (next != null && !next.IsCompleted)
+            {
+                next.IsAccepted = true;
+                UnlockLocationOnAccept(next);
+            }
         }
         // Финальный выбор: s4_07 завершается через /story/ending-choice, здесь только сигналим UI.
         if (q.Id == "story_9_10" || q.Id.EndsWith("_10_10"))
@@ -1095,6 +1101,25 @@ public class GameController : ControllerBase
             player = p,
             gameCompleted = p.GameCompleted,
         });
+    }
+
+    private void UnlockLocationOnAccept(Quest q)
+    {
+        var p = _state.Player;
+        if (p == null) return;
+        // Открыть локацию при получении задания «побывать на ...» (Завод: цепочка Бармена / сюжет s1_10).
+        if ((q.Type == QuestType.VisitLocation || q.Type == QuestType.ExtractAlive)
+            && !string.IsNullOrWhiteSpace(q.TargetLocationId)
+            && !p.UnlockedLocations.Contains(q.TargetLocationId))
+        {
+            bool isFactoryGate = string.Equals(q.TargetLocationId, "factory", StringComparison.OrdinalIgnoreCase)
+                                 && (q.Id == "bartender_6" || q.Id == "s1_10");
+            if (isFactoryGate)
+            {
+                p.UnlockedLocations.Add("factory");
+                _state.Persist();
+            }
+        }
     }
 
     private List<Item> CloneInventory(Player p) =>
@@ -1191,7 +1216,7 @@ public class GameController : ControllerBase
         ["prapor"] = "Шматко",
         ["therapist"] = "Медик",
         ["ragman"] = "Сидорович",
-        ["blacksmith"] = "Гриша",
+        ["blacksmith"] = "Кузнец",
         ["buyer"] = "Скупщик",
         ["bartender"] = "Бармен",
     };
@@ -1205,7 +1230,8 @@ public class GameController : ControllerBase
         var p = _state.Player;
         var unlocked = p.UnlockedTraders.Contains(traderId);
         var traderQuests = VisibleTraderQuests(traderId);
-        return Ok(new { trader = new { t.Id, t.Name, t.Description, t.Image, isUnlocked = unlocked }, dialogue = t.Dialogue, quests = traderQuests, time = _state.GetGameTimeInfo() });
+        var currentQuest = traderQuests.FirstOrDefault(q => !q.IsCompleted);
+        return Ok(new { trader = new { t.Id, t.Name, t.Description, t.Image, isUnlocked = unlocked }, dialogue = t.Dialogue, dialogueTree = t.DialogueTree, quests = traderQuests, currentQuestId = currentQuest?.Id, time = _state.GetGameTimeInfo() });
     }
 
     [HttpPost("traders/{traderId}/talk")]

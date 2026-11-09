@@ -66,7 +66,7 @@ public class LootService
             }
         }
 
-        foreach (var it in finalItems) it.FoundInRaid = true;
+        foreach (var it in finalItems) it.FoundInRaid = it.Type != ItemType.Ammo;
 
         var result = new LootResult
         {

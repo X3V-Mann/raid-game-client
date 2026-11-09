@@ -50,6 +50,7 @@ public class RaidController : ControllerBase
     [HttpGet("locations")]
     public object GetLocations()
     {
+        _state.EnsureQuestBasedLocationUnlocks();
         var p = _state.Player;
         return _locations.All.Select(l => new
         {
@@ -1409,20 +1410,6 @@ public class RaidController : ControllerBase
         if (enemy.IsBoss)
             EnsureBossIntelDrop(enemy, raid.LocationId);
 
-        // Патроны — только с гуманоидных врагов (не с мутантов).
-        if (!IsMutantEnemy(enemy))
-        {
-            var ranged = p.WeaponRanged;
-            if (ranged != null && !string.IsNullOrWhiteSpace(ranged.Caliber))
-            {
-                int ammoCount = _rng.Next(1, 31);
-                var ammo = _catalog.CreateAmmo(ranged.Caliber, 0.05, WeaponCatalog.AmmoPriceFor(ranged.Caliber), $"Патроны {ranged.Caliber}.");
-                ammo.Count = ammoCount;
-                ammo.FoundInRaid = true;
-                InventoryHelper.AddToInventory(p, ammo);
-                AddLog(c, $"🔫 Найдено патронов: {ammoCount}× {ranged.Caliber}.");
-            }
-        }
 
         bool isNight = GameStateService.IsNight(p.GameTimeMinutes);
         foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed))
@@ -1502,6 +1489,7 @@ public class RaidController : ControllerBase
                 raid = GenerateRaidAttempt(loc, tier, noTrees: true, sector: 1, maxSectors: max);
             }
         }
+        InjectQuestItems(raid, loc);
         return raid;
     }
 
@@ -1945,9 +1933,116 @@ public class RaidController : ControllerBase
         raid.CombatReturnX = 0;
         raid.CombatReturnY = 0;
         _state.CurrentCombat = null;
+        InjectQuestItems(raid, loc);
         raid.Log.Add($"🧭 Вы продвинулись дальше: {loc.Name}, сектор {raid.Sector}/{raid.MaxSectors}.");
         foreach (var line in fresh.Log.Where(l => l.Contains("Зданий") || l.Contains("Тайников") || l.Contains("Автомоб") || l.Contains("переход") || l.Contains("➜")))
             raid.Log.Add(line);
+    }
+
+    /// <summary>
+    /// Подкладывает в лут рейда квестовые предметы активных заданий (1 шт. на рейд/сектор при необходимости),
+    /// чтобы их можно было найти. Не спаунит, если предмет уже есть у игрока/в схроне или задание закрыто.
+    /// </summary>
+    private void InjectQuestItems(RaidState raid, Location loc)
+    {
+        var p = _state.Player;
+        if (p == null) return;
+
+        var injectedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var q in _state.AllQuests()
+                     .Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed
+                                 && q.Type == QuestType.Fetch
+                                 && !string.IsNullOrWhiteSpace(q.TargetItemCode)))
+        {
+            var code = q.TargetItemCode!;
+            if (!injectedCodes.Add(code)) continue;
+
+            // Локация: если у квеста задана цель — только она; иначе где угодно (с точечными исключениями).
+            if (!string.IsNullOrWhiteSpace(q.TargetLocationId))
+            {
+                if (!string.Equals(q.TargetLocationId, raid.LocationId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+            }
+            else if (string.Equals(code, "quest_bunker_key", StringComparison.OrdinalIgnoreCase))
+            {
+                var rid = raid.LocationId ?? "";
+                if (!rid.Equals("suburb", StringComparison.OrdinalIgnoreCase)
+                    && !rid.Equals("gradirni", StringComparison.OrdinalIgnoreCase))
+                    continue;
+            }
+
+            // Уже получен/имеется — не спаунить повторно.
+            int have = InventoryHelper.CountByCode(p, code)
+                       + p.Shelter.Stash.Where(i => string.Equals(i.Code, code, StringComparison.OrdinalIgnoreCase))
+                                        .Sum(i => Math.Max(1, i.Count));
+            if (have >= Math.Max(1, q.TargetCount)) continue;
+
+            if (_catalog.Get(code) == null) continue;
+
+            var item = _catalog.Create(code);
+            item.Count = 1;
+            item.FoundInRaid = true;
+
+            if (!TryPlaceQuestItem(raid, item))
+            {
+                // fallback: тайник на земле
+                var pos = FindFreeGround(raid);
+                if (pos != null)
+                {
+                    var (sx, sy) = pos.Value;
+                    var tile = GetTile(raid, sx, sy);
+                    if (tile != null && tile.Type == RaidTileTypes.Ground)
+                        tile.Type = RaidTileTypes.Stash;
+                    raid.Stashes.Add(new RaidStash
+                    {
+                        X = sx, Y = sy,
+                        Loot = new List<Item> { item },
+                        Money = 0, Xp = 0,
+                    });
+                }
+                else
+                {
+                    // крайний случай: положить в первый попавшийся лут-контейнер здания
+                    var anyB = raid.Buildings.FirstOrDefault();
+                    if (anyB != null) anyB.Loot.Add(item);
+                }
+            }
+        }
+    }
+
+    private bool TryPlaceQuestItem(RaidState raid, Item item)
+    {
+        var containers = new List<Action<Item>>();
+        foreach (var b in raid.Buildings.Where(b => !b.Looted))
+            containers.Add(it => b.Loot.Add(it));
+        foreach (var b in raid.Buildings.Where(b => b.HasStash && !b.StashLooted))
+            containers.Add(it => b.StashLoot.Add(it));
+        foreach (var s in raid.Stashes.Where(s => !s.Looted))
+            containers.Add(it => s.Loot.Add(it));
+        foreach (var c in raid.Cars.Where(c => !c.Looted))
+            containers.Add(it => c.Loot.Add(it));
+        foreach (var b in raid.Buildings)
+            foreach (var f in b.Furniture.Where(f => !f.Looted))
+                containers.Add(it => f.Loot.Add(it));
+
+        if (containers.Count == 0) return false;
+        containers[_rng.Next(containers.Count)](item);
+        return true;
+    }
+
+    private (int x, int y)? FindFreeGround(RaidState raid)
+    {
+        for (int tries = 0; tries < 120; tries++)
+        {
+            int x = _rng.Next(1, Math.Max(2, raid.Width - 1));
+            int y = _rng.Next(1, Math.Max(2, raid.Height - 1));
+            var t = GetTile(raid, x, y);
+            if (t == null || t.Type != RaidTileTypes.Ground) continue;
+            if (x == raid.PlayerX && y == raid.PlayerY) continue;
+            if (raid.Exits.Any(e => e.X == x && e.Y == y)) continue;
+            return (x, y);
+        }
+        return null;
     }
 
     private record BuildingTheme(string Name, string Kind, string Icon, int W, int H, string Description);

@@ -27,6 +27,7 @@ public class Trader
     public int LoyaltyNext { get; set; }
     public bool IsUnlocked { get; set; } = true;
     public List<DialogueLine> Dialogue { get; set; } = new(); // заглушка/контент диалога
+    public List<DialogueNode> DialogueTree { get; set; } = new(); // интерактивный диалог (STALKER-style)
 }
 
 public class DialogueLine
@@ -34,6 +35,23 @@ public class DialogueLine
     public string Speaker { get; set; } = "";
     public string Text { get; set; } = "";
     public string? GivesQuestId { get; set; }
+}
+
+public class DialogueNode
+{
+    public string Id { get; set; } = "";
+    public string Speaker { get; set; } = "";
+    public string Text { get; set; } = "";
+    public List<DialogueChoice> Choices { get; set; } = new();
+}
+
+public class DialogueChoice
+{
+    public string Text { get; set; } = "";
+    public string? NextId { get; set; }
+    /// <summary>Действие: accept_quest, complete_quest, talk, close</summary>
+    public string? Action { get; set; }
+    public string? ActionId { get; set; }
 }
 
 public class ItemStack

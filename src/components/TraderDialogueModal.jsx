@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { audio } from "../audio";
 import RubleIcon from "./RubleIcon";
@@ -6,21 +6,62 @@ import RubleIcon from "./RubleIcon";
 export default function TraderDialogueModal({ traderId, traderName, onClose, onUpdate }) {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [nodeId, setNodeId] = useState("root");
+  const [info, setInfo] = useState("");
 
-  const load = async () => {
+  const load = async (keepNode = false) => {
     try {
       const d = await api.getTraderDialogue(traderId);
       setData(d);
+      if (!keepNode) setNodeId("root");
       // Прогресс заданий типа "Поговорить"
       try { await api.talkTrader(traderId); } catch {}
     } catch (e) { console.error(e); }
   };
-  useEffect(() => { load(); }, [traderId]);
+  useEffect(() => { setNodeId("root"); setInfo(""); load(false); }, [traderId]);
 
-  const actQuest = async (fn, mission=false) => {
-    if (busy) return; setBusy(true);
-    try { await fn(); if (mission) audio.playSfx("mission"); await load(); if (onUpdate) await onUpdate(); }
-    catch(e){ alert(e.message||"Ошибка"); } finally { setBusy(false); }
+  const actQuest = async (fn, mission = false) => {
+    if (busy) return; setBusy(true); setInfo("");
+    try { await fn(); if (mission) audio.playSfx("mission"); await load(true); if (onUpdate) await onUpdate(); }
+    catch(e){ setInfo(e.message || "Ошибка"); } finally { setBusy(false); }
+  };
+
+  const tree = data?.dialogueTree || data?.DialogueTree || [];
+  const nodeMap = useMemo(() => {
+    const m = new Map();
+    for (const n of tree) m.set(n.id || n.Id, n);
+    return m;
+  }, [tree]);
+  const currentNode = nodeMap.get(nodeId) || nodeMap.get("root") || (tree.length ? tree[0] : null);
+
+  const handleChoice = async (choice) => {
+    if (busy) return;
+    const action = choice.action || choice.Action;
+    const actionId = choice.actionId || choice.ActionId;
+    const nextId = choice.nextId || choice.NextId;
+    setInfo("");
+    try {
+      if (action === "accept_current_quest") {
+        const qid = data?.currentQuestId || data?.CurrentQuestId || (data?.quests || []).find((q) => !q.isAccepted && !q.isCompleted)?.id;
+        if (!qid) { setInfo("Сейчас нет задания, которое можно взять."); }
+        else await actQuest(() => api.acceptQuest(qid));
+      } else if (action === "accept_quest" && actionId) {
+        await actQuest(() => api.acceptQuest(actionId));
+      } else if (action === "complete_quest" && actionId) {
+        await actQuest(() => api.completeQuest(actionId), true);
+      } else if (action === "talk") {
+        setBusy(true);
+        try { await api.talkTrader(traderId); await load(true); } catch {}
+        setBusy(false);
+      } else if (action === "close") {
+        onClose?.();
+        return;
+      }
+      if (nextId) setNodeId(nextId);
+    } catch (e) {
+      setInfo(e.message || "Ошибка");
+      if (nextId) setNodeId(nextId);
+    }
   };
 
   if (!data) return (
@@ -28,6 +69,9 @@ export default function TraderDialogueModal({ traderId, traderName, onClose, onU
   );
 
   const t = data.trader || {};
+  const flatDialogue = data.dialogue || data.Dialogue || [];
+  const hasTree = !!currentNode;
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e)=>e.stopPropagation()} style={{maxWidth:760,width:"95%"}}>
@@ -39,10 +83,24 @@ export default function TraderDialogueModal({ traderId, traderName, onClose, onU
           <>
             <div className="death-text" style={{marginBottom:10}}>
               <p><i>{t.description || ""}</i></p>
-              {(data.dialogue||[]).length === 0 ? <p>«Поговорим, когда будет дело».</p> : data.dialogue.map((l,i)=>(<p key={i}><b>{l.speaker || t.name}:</b> {l.text}</p>))}
+              {hasTree ? (
+                <div style={{marginTop:8}}>
+                  <p><b>{currentNode.speaker || currentNode.Speaker || t.name}:</b> {currentNode.text || currentNode.Text}</p>
+                  <div style={{display:"flex", flexDirection:"column", gap:6, marginTop:10}}>
+                    {(currentNode.choices || currentNode.Choices || []).map((c, i) => (
+                      <button key={i} disabled={busy} style={{textAlign:"left"}} onClick={() => handleChoice(c)}>
+                        {c.text || c.Text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                flatDialogue.length === 0 ? <p>«Поговорим, когда будет дело».</p> : flatDialogue.map((l,i)=>(<p key={i}><b>{l.speaker || t.name}:</b> {l.text}</p>))
+              )}
+              {info ? <p style={{color:"#ff8b7a", marginTop:8}}>{info}</p> : null}
             </div>
             <h4>Задания (сюжет/цепочка)</h4>
-            <div className="quest-list" style={{maxHeight:360,overflow:"auto"}}>
+            <div className="quest-list" style={{maxHeight:320,overflow:"auto"}}>
               {(data.quests||[]).length === 0 ? <p className="desc">Нет доступных заданий. Новые появятся после выполнения предыдущих (выполненные — во вкладке «Выполненные» дневника).</p> : (data.quests||[]).slice(0,1).map(q=> (
                 <div key={q.id} className={`quest ${q.isCompleted?"done":""}`}>
                   <b>{q.icon ? <img src={q.icon} alt="" style={{width:18,height:18,verticalAlign:"middle",marginRight:4}} onError={(e)=>{e.currentTarget.style.display="none";}}/>:null}{q.title}</b>
