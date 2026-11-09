@@ -1071,6 +1071,12 @@ public class GameController : ControllerBase
         if (q.IsDaily)
             q.AvailableAt = DateTime.Now.Date.AddDays(1);
 
+        if (q.Category == QuestCategory.Side && !string.IsNullOrEmpty(q.TraderId))
+        {
+            _state.SideQuests.Remove(q);
+            _state.SideQuests.Add(_questSvc.CreateRandomSideQuest(q.TraderId, _state.SideQuests));
+        }
+
         if (q.IsStory && q.Category == QuestCategory.Story)
         {
             var next = _questSvc.GetCurrentStory(_state.StoryQuests);
@@ -1130,20 +1136,59 @@ public class GameController : ControllerBase
         var unlocked = p.UnlockedLocations;
         var unlockedTraders = p.UnlockedTraders;
         var traderNames = TraderDisplayNames();
-        var list = _state.SideQuests
-            .Where(q => !q.IsCompleted || q.IsRepeatable)
-            .Where(q => string.IsNullOrEmpty(q.TargetLocationId) || unlocked.Contains(q.TargetLocationId))
-            .Where(q => string.IsNullOrEmpty(q.TraderId) || unlockedTraders.Contains(q.TraderId))
-            .OrderByDescending(q => q.IsUrgent)
-            .ThenBy(q => q.Order)
-            .Select(q => {
-                if (!string.IsNullOrEmpty(q.TraderId) && traderNames.TryGetValue(q.TraderId, out var tn)) q.TraderName = tn;
-                else if (!string.IsNullOrEmpty(q.TraderId)) q.TraderName = _state.Traders.FirstOrDefault(t => t.Id == q.TraderId)?.Name ?? q.TraderId;
-                else q.TraderName = null;
-                return q;
-            })
-            .ToList();
-        return new { quests = list, time = _state.GetGameTimeInfo() };
+
+        // 1 задание на 1 торговца: принятое/активное, иначе случайное доступное. Просроченные заменяются.
+        var list = new List<Quest>();
+        foreach (var traderId in unlockedTraders)
+        {
+            var pool = _state.SideQuests
+                .Where(q => string.Equals(q.TraderId, traderId, StringComparison.OrdinalIgnoreCase))
+                .Where(q => !q.IsCompleted)
+                .Where(q => string.IsNullOrEmpty(q.TargetLocationId) || unlocked.Contains(q.TargetLocationId))
+                .ToList();
+
+            // Убираем проваленные срочные из пула и заменяем новым случайным
+            foreach (var failed in pool.Where(q => q.IsFailed).ToList())
+            {
+                _state.SideQuests.Remove(failed);
+                pool.Remove(failed);
+                var replacement = _questSvc.CreateRandomSideQuest(traderId, _state.SideQuests);
+                if (string.IsNullOrEmpty(replacement.TargetLocationId) || unlocked.Contains(replacement.TargetLocationId))
+                {
+                    _state.SideQuests.Add(replacement);
+                    pool.Add(replacement);
+                }
+                else
+                {
+                    _state.SideQuests.Add(replacement); // останется на будущее, когда локация откроется
+                }
+            }
+
+            Quest? pick = pool.FirstOrDefault(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed);
+            if (pick == null)
+            {
+                var avail = pool.Where(q => !q.IsAccepted && !q.IsFailed).ToList();
+                pick = avail.Count > 0 ? avail[Random.Shared.Next(avail.Count)] : null;
+            }
+            if (pick == null)
+            {
+                // Нет подходящего задания — создаём новое
+                var fresh = _questSvc.CreateRandomSideQuest(traderId, _state.SideQuests);
+                _state.SideQuests.Add(fresh);
+                if (string.IsNullOrEmpty(fresh.TargetLocationId) || unlocked.Contains(fresh.TargetLocationId))
+                    pick = fresh;
+            }
+            if (pick != null) list.Add(pick);
+        }
+
+        foreach (var q in list)
+        {
+            if (!string.IsNullOrEmpty(q.TraderId) && traderNames.TryGetValue(q.TraderId, out var tn)) q.TraderName = tn;
+            else if (!string.IsNullOrEmpty(q.TraderId)) q.TraderName = _state.Traders.FirstOrDefault(t => t.Id == q.TraderId)?.Name ?? q.TraderId;
+            else q.TraderName = null;
+        }
+
+        return new { quests = list.OrderBy(q => q.TraderName).ThenBy(q => q.Title).ToList(), time = _state.GetGameTimeInfo() };
     }
 
     private static Dictionary<string, string> TraderDisplayNames() => new(StringComparer.OrdinalIgnoreCase)

@@ -3,12 +3,23 @@ import { api } from "../api";
 import { audio } from "../audio";
 import RubleIcon from "./RubleIcon";
 
+function fmtDuration(mins) {
+  if (!mins || mins <= 0) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    return `${d}д${rh ? ` ${rh}ч` : ""}`;
+  }
+  return m ? `${h}ч ${m}м` : `${h}ч`;
+}
+
 function fmtDeadline(q, time) {
   if (!q.isUrgent || !q.deadlineGameMinutes || !time) return null;
   const left = q.deadlineGameMinutes - (time.totalMinutes ?? 0);
   if (left <= 0) return "истёк срок";
-  const h = Math.floor(left / 60), m = left % 60;
-  return `осталось ${h}ч ${m}м (игр.)`;
+  return `осталось ${fmtDuration(left)} (игр.)`;
 }
 
 export default function BulletinBoard({ act, onToast }) {
@@ -37,20 +48,23 @@ export default function BulletinBoard({ act, onToast }) {
         {(data.quests || []).map((q) => {
           const dl = fmtDeadline(q, time);
           const expired = q.isFailed || dl === "истёк срок";
+          const title = q.isUrgent ? String(q.title || "").replace(/^\s*СРОЧНО[:\s]*/i, "") : q.title;
+          const given = q.isUrgent ? fmtDuration(q.urgentDurationMinutes) : null;
           return (
             <div key={q.id} className={`quest ${q.isCompleted ? "done" : ""} ${expired ? "locked" : ""}`}>
               <b>
                 {q.icon ? <img src={q.icon} alt="" style={{ width: 20, height: 20, verticalAlign: "middle", marginRight: 6, objectFit: "contain" }} onError={(e)=>{e.currentTarget.style.display="none";}} /> : null}
                 {q.isUrgent ? <span style={{ color: "#ff6b6b" }}>СРОЧНО </span> : null}
-                {q.title}
+                {title}
               </b>
               <p>{q.description}{q.targetLocationName ? ` · 📍 ${q.targetLocationName}` : ""}{q.timeOfDay === 2 || q.timeOfDay === "Night" ? " · 🌙 ночь" : (q.timeOfDay === 1 || q.timeOfDay === "Day" ? " · ☀️ день" : "")}</p>
               {(q.traderName || q.traderId) && <span>Заказчик: <b>{q.traderName || q.traderId}</b> · сдача повышает репутацию</span>}
+              {q.isUrgent && given && <span>⏱ Срок на выполнение: {given} (игрового времени){dl ? ` · ${dl}` : ""}</span>}
               {q.isAccepted && !q.isCompleted && !expired && q.type !== 0 && q.type !== "Fetch" && q.targetCount > 0 && (
-                <span>Прогресс: {q.progress}/{q.targetCount}{dl ? ` · ⏱ ${dl}` : ""}</span>
+                <span>Прогресс: {q.progress}/{q.targetCount}{!q.isUrgent && dl ? ` · ⏱ ${dl}` : ""}</span>
               )}
               {q.isAccepted && !q.isCompleted && (q.type === 0 || q.type === "Fetch") && (
-                <span>Нужно: {q.targetItemName || q.targetItemCode} ×{q.targetCount} (из рейда){dl ? ` · ⏱ ${dl}` : ""}</span>
+                <span>Нужно: {q.targetItemName || q.targetItemCode} ×{q.targetCount} (из рейда){!q.isUrgent && dl ? ` · ⏱ ${dl}` : ""}</span>
               )}
               <span className="quest-reward">Награда: {q.reward?.money || 0} <RubleIcon size={13} />{q.reward?.xp ? ` · ${q.reward.xp} опыта` : ""}</span>
               <div>

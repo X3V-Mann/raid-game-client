@@ -245,18 +245,81 @@ public class QuestService
         return list;
     }
 
+    private static readonly (string c, string n)[] SidePartFetch = { ("flesh_eye","Глаз плоти"),("flesh_fat","Сало плоти"),("boar_meat","Мясо кабана"),("boar_hoof","Копыто кабана") };
+    private static readonly (string c, string n, string icon)[] SideMatFetch = {
+        ("scrap","Металлолом",IcoMats),("wire","Провода",IcoMats),("cloth","Ткань",IcoMats),("bolts","Болты",IcoMats),
+        ("capacitors","Конденсаторы",IcoMats),("resistors","Резисторы",IcoMats),("bandage","Бинт",IcoItem),("canned","Тушёнка",IcoItem),
+        ("water","Вода",IcoItem),("mineral_water","Минеральная вода",IcoItem),("electronics","Микросхемы",IcoMats),("toolkit","Набор инструментов",IcoTools)
+    };
+    private static readonly string[] SideBuildingKinds = { "house","warehouse","shop","garage","military","hospital" };
+
+    public Quest CreateRandomSideQuest(string traderId, IEnumerable<Quest>? existing = null)
+    {
+        var rng = Random.Shared;
+        var ids = existing != null ? new HashSet<string>(existing.Select(q => q.Id), StringComparer.OrdinalIgnoreCase) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string id;
+        do { id = "side_r_" + Guid.NewGuid().ToString("N")[..10]; } while (ids.Contains(id));
+
+        bool urgent = rng.NextDouble() < 0.22;
+        int urgentMins = urgent ? (rng.Next(4, 10) * 60) : 0; // 4-9 игровых часов
+        int kind = rng.Next(0, 6);
+        var loc = Locs[rng.Next(Locs.Length)];
+        Quest q;
+        switch (kind)
+        {
+            case 0:
+            {
+                var pf = SidePartFetch[rng.Next(SidePartFetch.Length)];
+                int cnt = rng.Next(1, 4);
+                q = Q(id, "Поставка частей", $"Принести {pf.n} ×{cnt} (из рейда).", IcoMats, QuestType.Fetch, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    itemCode: pf.c, itemName: pf.n, count: cnt, urgent: urgent, urgentMins: urgentMins, money: 60 + cnt * 25, xp: 25 + cnt * 12);
+                break;
+            }
+            case 1:
+            {
+                int cnt = 2 + loc.Tier + rng.Next(0, 3);
+                bool night = rng.NextDouble() < 0.35;
+                q = Q(id, "Зачистка территории", $"Убить {cnt} врагов на локации {loc.Name}{(night ? " ночью" : "")}.", IcoKillHuman, QuestType.Kill, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    count: cnt, loc: loc.Id, locName: loc.Name, tod: night ? QuestTimeOfDay.Night : QuestTimeOfDay.Any, urgent: urgent, urgentMins: urgentMins, money: 80 + loc.Tier * 25, xp: 35 + loc.Tier * 12);
+                break;
+            }
+            case 2:
+                q = Q(id, "Разведка и выход", $"Побывать на локации {loc.Name} и выйти живым.", IcoGo, QuestType.ExtractAlive, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    count: 1, loc: loc.Id, locName: loc.Name, urgent: urgent, urgentMins: urgentMins, money: 100 + loc.Tier * 20, xp: 40 + loc.Tier * 10);
+                break;
+            case 3:
+                q = Q(id, "Охота на босса", $"Убить босса на локации {loc.Name}.", IcoKillHuman, QuestType.KillBoss, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    count: 1, loc: loc.Id, locName: loc.Name, boss: true, urgent: urgent, urgentMins: urgentMins, money: 250 + loc.Tier * 60, xp: 120 + loc.Tier * 25);
+                break;
+            case 4:
+            {
+                var bk = SideBuildingKinds[rng.Next(SideBuildingKinds.Length)];
+                int cnt = 1 + rng.Next(0, 2);
+                q = Q(id, "Обыск помещений", $"Зайти в здание и обыскать ({bk}) — {cnt} раз(а).", IcoScout, QuestType.EnterBuilding, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    count: cnt, bkind: bk, urgent: urgent, urgentMins: urgentMins, money: 90 + cnt * 30, xp: 35 + cnt * 15);
+                break;
+            }
+            default:
+            {
+                var mf = SideMatFetch[rng.Next(SideMatFetch.Length)];
+                int cnt = 2 + rng.Next(0, 4);
+                q = Q(id, $"Нужен {mf.n}", $"Принести {mf.n} ×{cnt} (из рейда).", mf.icon, QuestType.Fetch, QuestCategory.Side, 0, rng.Next(1, 9999), traderId,
+                    itemCode: mf.c, itemName: mf.n, count: cnt, urgent: urgent, urgentMins: urgentMins, money: 70 + cnt * 20, xp: 30 + cnt * 10);
+                break;
+            }
+        }
+        q.IsRepeatable = false; // слот доски заменяется новым заданием после выполнения
+        return q;
+    }
+
     public List<Quest> CreateSideQuests()
     {
         // 80+ побочных заданий для доски объявлений (могут повторяться по типу; часть срочные)
         var list = new List<Quest>();
         var rng = new Random(75);
         string[] traders = { "bartender", "buyer", "prapor", "therapist", "blacksmith", "ragman" };
-        var partFetch = new (string c,string n)[] { ("flesh_eye","Глаз плоти"),("flesh_fat","Сало плоти"),("boar_meat","Мясо кабана"),("boar_hoof","Копыто кабана") }; // без хвостов
-        var matFetch = new (string c,string n,string icon)[] {
-            ("scrap","Металлолом",IcoMats),("wire","Провода",IcoMats),("cloth","Ткань",IcoMats),("bolts","Болты",IcoMats),
-            ("capacitors","Конденсаторы",IcoMats),("resistors","Резисторы",IcoMats),("bandage","Бинт",IcoItem),("canned","Тушёнка",IcoItem),
-            ("water","Вода",IcoItem),("mineral_water","Минеральная вода",IcoItem),("electronics","Микросхемы",IcoMats),("toolkit","Набор инструментов",IcoTools)
-        };
+        var partFetch = SidePartFetch;
+        var matFetch = SideMatFetch;
         int n = 1;
         // Принести (части/материалы/предметы)
         foreach (var tr in traders)
