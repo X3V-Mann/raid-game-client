@@ -162,26 +162,10 @@ export default function Shelter({ player, act }) {
         </span>
       </div>
 
-      <div className="materials-panel">
-        <div className="materials-title">🔧 Материалы в инвентаре:</div>
-        <div className="materials-grid">
-          {MATERIAL_CODES.map((code) => {
-            const count = countOf(code);
-            const meta = MATERIAL_META[code];
-            return (
-              <div key={code} className={`material-chip ${count > 0 ? "has" : "empty"}`}>
-                <span className="material-icon">{meta.icon}</span>
-                <span className="material-name">{meta.name}</span>
-                <span className="material-count">×{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <p className="desc">
-        Улучшения требуют деньги и материалы: по {`{уровень}`} шт. металлолома, ткани и проводов.
-        С 3-го уровня нужен аккумулятор, с 5-го — микросхемы. Максимальный уровень — 5.
+        Каждый модуль требует свой набор предметов (2–5 видов, по 1–10 шт.). Часть предметов
+        нужна <b>только из рейда</b> (отмечены значком). Материалы берутся из инвентаря и схрона.
+        Максимальный уровень — 5.
       </p>
 
       <div className="modules">
@@ -198,8 +182,8 @@ export default function Shelter({ player, act }) {
               {!isMax && (
                 <div className="module-reqs">
                   {m.requirements.map((r) => (
-                    <span key={r.code} className={r.have >= r.need ? "ok" : "no"}>
-                      {r.name} {r.have}/{r.need}
+                    <span key={`${r.code}-${r.fromRaid ? "raid" : "any"}`} className={r.have >= r.need ? "ok" : "no"} title={r.fromRaid ? "Требуется предмет, найденный в рейде" : ""}>
+                      {r.name} ×{r.need} ({r.have}/{r.need}){r.fromRaid ? " [из рейда]" : ""}
                     </span>
                   ))}
                 </div>

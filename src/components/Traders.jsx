@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { rarityClass, ItemIcon } from "./ItemVisual";
 import { buyPriceFor, sellPriceFor, traderBuys, TYPE_LABELS } from "../economy";
-import TraderQuestsModal from "./TraderQuestsModal";
+import TraderDialogueModal from "./TraderDialogueModal";
 import ItemDetails from "./ItemDetails";
 import RubleIcon from "./RubleIcon";
 
@@ -358,9 +358,10 @@ export default function Traders({ player, act }) {
             </span>
           </div>
 
-          <button className="portrait-quests-btn" onClick={() => setQuestsOpen(true)}>
-            📋 Задания торговца
+          <button className="portrait-quests-btn" onClick={() => setQuestsOpen(true)} disabled={t.isUnlocked === false}>
+            💬 Диалог
           </button>
+          {t.isUnlocked === false && <div className="hint">Торговец закрыт. Откройте через сюжет/задания.</div>}
           <button
             className="portrait-quests-btn barter-btn"
             onClick={() => setBarterOpen((v) => !v)}
@@ -727,10 +728,11 @@ export default function Traders({ player, act }) {
       )}
 
       {questsOpen && (
-        <TraderQuestsModal
+        <TraderDialogueModal
           traderId={t.id}
           traderName={t.name}
           onClose={() => setQuestsOpen(false)}
+          onUpdate={async () => { await act(() => Promise.resolve()); }}
         />
       )}
     </div>

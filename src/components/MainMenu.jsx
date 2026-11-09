@@ -118,9 +118,11 @@ export default function MainMenu({ playerName, canContinue, onNewGame, onContinu
               <button className="close-btn" onClick={() => setModal(null)}>✖</button>
             </div>
             <div className="death-text">
-              <b>Разработчик:</b> Геолог<br /><br />
+              <b>Авторы:</b> Геолог, DeepSeek, Iceman<br /><br />
+              <b>Помощники:</b> IvanBol, AngryPop, Мой отец<br /><br />
+              <b>Специальная благодарность:</b> Моя сестра, Мой отец, преподаватель по ASP.NET и AJAX<br /><br />
               <b>Источники вдохновения и спрайтов:</b><br />
-              S.T.A.L.K.E.R., Escape from Tarkov, DayZ
+              S.T.A.L.K.E.R., Escape from Tarkov, DayZ, DayR, 7 Days To Die, Моды на S.T.A.L.K.E.R.
             </div>
           </div>
         </div>

@@ -63,7 +63,6 @@ public static class TraderLoyalty
         "vest_bulletproof" => 5,
         "vest_military" => 4,
         "vest_ceramic" => 4,
-        "vest_plate" => 4,
         // Новые рюкзаки
         "bag_huge" => 4,
         "bag_cargo" => 4,

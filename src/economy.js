@@ -16,8 +16,14 @@ export const buyPriceFor = (item, trader, multiplier = 1) =>
     ),
   );
 
-export const traderBuys = (trader, item) =>
-  !!trader && (!!trader.buysEverything || (trader.buys || []).includes(item?.type));
+const MUTANT_PART_CODES = new Set(["dog_tail","flesh_eye","flesh_fat","boar_meat","boar_hoof"]);
+
+export const traderBuys = (trader, item) => {
+  if (!trader || !item) return false;
+  if (trader.buysEverything) return true;
+  if (MUTANT_PART_CODES.has(item.code) && (trader.id === "bartender" || trader.id === "buyer")) return true;
+  return (trader.buys || []).includes(item.type);
+};
 
 export const TYPE_LABELS = {
   WeaponMelee: "Ближний бой",

@@ -14,7 +14,27 @@ const SFX_FILES = {
   mission: "/audio/mission.mp3",
 };
 
+const AMBIENT_DAY = [
+  "/audio/ambient/Jupiter's Theme. Day.mp3",
+  "/audio/ambient/Theme of Pripyat. Day.mp3",
+  "/audio/ambient/Theme of Zaton. Day.mp3",
+].map((p) => encodeURI(p));
+const AMBIENT_NIGHT = [
+  "/audio/ambient/Theme of Jupiter. Night.mp3",
+  "/audio/ambient/Theme of Pripyat. Night.mp3",
+  "/audio/ambient/Zaton Theme. Night.mp3",
+].map((p) => encodeURI(p));
+
 const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0));
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 class AudioManager {
   constructor() {
@@ -26,8 +46,18 @@ class AudioManager {
     this.lastHover = null;
     this.lastInteractAt = 0;
 
-    this.menuAudio = this.createAudio("/audio/menu.mp3", true, "auto");
-    this.ambientAudio = this.createAudio("/audio/ambient.mp3", true, "none");
+    // Музыка убежища: в меню зациклена, вне убежища играет один раз и затем переходит в эмбиент.
+    // preload "none", чтобы не тянуть 3+ МБ при загрузке страницы.
+    this.menuAudio = this.createAudio("/audio/menu.mp3", false, "none");
+    this.menuAudio.addEventListener("ended", () => this.onMenuEnded());
+
+    this.ambientQueue = [];
+    this.isNight = false;
+    this.ambientAudio = new Audio();
+    this.ambientAudio.preload = "none";
+    this.ambientAudio.addEventListener("ended", () => this.playNextAmbient());
+    this.ambientAudio.addEventListener("error", () => this.playNextAmbient());
+
     this.cassetteAudio = new Audio();
     this.cassetteAudio.loop = true;
     this.cassetteAudio.preload = "none";
@@ -154,29 +184,59 @@ class AudioManager {
     }
   }
 
-  playMenu() {
-    if (!this.unlocked || this.scene !== "menu") return;
-    this.menuAudio.play().catch(() => {});
+  playMenu(loop = true) {
+    if (!this.unlocked) return;
+    if (this.cassette) return;
+    this.menuAudio.loop = !!loop;
+    if (loop || this.menuAudio.paused) this.menuAudio.play().catch(() => {});
   }
 
   pauseMenu() {
     this.menuAudio.pause();
   }
 
+  setNight(isNight) {
+    const next = !!isNight;
+    if (this.isNight === next) return;
+    this.isNight = next;
+    this.ambientQueue = []; // смена суток — обновим подборку при следующем треке
+  }
+
+  ensureAmbientQueue() {
+    if (this.ambientQueue.length === 0) this.ambientQueue = shuffle(this.isNight ? AMBIENT_NIGHT : AMBIENT_DAY);
+  }
+
+  playNextAmbient() {
+    if (!this.unlocked || this.cassette) return;
+    // Эмбиент играет в игровой сцене (в меню — музыка убежища)
+    if (this.scene !== "game") return;
+    this.ensureAmbientQueue();
+    const src = this.ambientQueue.shift();
+    if (!src) return;
+    this.ambientAudio.src = src;
+    this.ambientAudio.volume = this.settings.ambient;
+    this.ambientAudio.play().catch(() => {});
+  }
+
   playAmbient() {
     if (!this.unlocked || this.scene !== "game" || this.cassette) return;
-    this.ambientAudio.play().catch(() => {});
+    if (!this.ambientAudio.paused && this.ambientAudio.src) return;
+    this.playNextAmbient();
   }
 
   pauseAmbient() {
     this.ambientAudio.pause();
   }
 
+  onMenuEnded() {
+    // Музыка меню играет только в меню; в игре этот хук не используется.
+  }
+
   playScene() {
     if (!this.unlocked) return;
     if (this.scene === "menu") {
       this.pauseAmbient();
-      this.playMenu();
+      this.playMenu(true);
     } else {
       this.pauseMenu();
       if (!this.cassette) this.playAmbient();
@@ -187,10 +247,11 @@ class AudioManager {
     if (scene === this.scene) return;
     this.scene = scene;
     if (scene === "menu") {
-      this.stopCassette();
+      this.stopCassette(false);
       this.pauseAmbient();
-      this.playMenu();
+      this.playMenu(true);
     } else {
+      // Музыка меню — только в меню. В игре: эмбиент (кассета перекрывает).
       this.pauseMenu();
       if (!this.cassette) this.playAmbient();
     }
@@ -218,17 +279,26 @@ class AudioManager {
     this.notify();
   }
 
-  stopCassette() {
+  stopCassette(resume = true) {
     this.cassette = null;
     this.cassetteAudio.pause();
     this.cassetteAudio.currentTime = 0;
-    if (this.scene === "game") this.playAmbient();
+    if (resume && this.scene === "game") {
+      // Возобновляем текущий эмбиент, если он был на паузе (кассета играла в убежище),
+      // иначе запускаем следующий трек.
+      if (this.ambientAudio.src && !this.ambientAudio.ended) {
+        this.ambientAudio.volume = this.settings.ambient;
+        this.ambientAudio.play().catch(() => this.playNextAmbient());
+      } else {
+        this.playNextAmbient();
+      }
+    }
     this.notify();
   }
 
-  // Трек закончился — плавный переход на эмбиент (музыка играла и за пределами убежища).
+  // Трек закончился — плавный переход (кассета играла в т.ч. вне убежища).
   onCassetteEnded() {
-    this.stopCassette();
+    this.stopCassette(true);
   }
 
   isCassettePlaying() {

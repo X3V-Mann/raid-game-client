@@ -32,15 +32,15 @@ public class SaveController : ControllerBase
         {
             var parsed = ParseSave(System.IO.File.ReadAllText(autoPath));
             if (parsed.Player != null) ApplyPlayer(state.Player, parsed.Player);
-            if (parsed.Version == "4")
+            if (parsed.Version == "7.5")
             {
-                ApplyQuests(state, parsed.Quests, parsed.StoryQuests);
+                ApplyQuests(state, parsed.Quests, parsed.StoryQuests, parsed.SideQuests);
                 state.Raid = parsed.Raid is { Finished: false } ? parsed.Raid : null;
                 state.CurrentCombat = state.Raid?.Combat;
             }
             else
             {
-                // Старый сейв: контент заданий переработан, поэтому берём новый.
+                // Старый/несовместимый формат квестов: сохраняем прогресс игрока, пересоздаём систему заданий v7.5.
                 state.CurrentCombat = null;
                 state.PendingEnemy = null;
                 state.Raid = null;
@@ -57,7 +57,7 @@ public class SaveController : ControllerBase
     }
 
     /// <summary>Читает и новый формат (SaveFile), и старый (просто Player).</summary>
-    private static (Player? Player, List<Quest>? Quests, List<Quest>? StoryQuests, RaidState? Raid, string? Version) ParseSave(string json)
+    private static (Player? Player, List<Quest>? Quests, List<Quest>? StoryQuests, List<Quest>? SideQuests, RaidState? Raid, string? Version) ParseSave(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -66,10 +66,10 @@ public class SaveController : ControllerBase
             (root.TryGetProperty("Player", out _) || root.TryGetProperty("player", out _));
 
         if (!isWrapped)
-            return (JsonSerializer.Deserialize<Player>(json), null, null, null, null);
+            return (JsonSerializer.Deserialize<Player>(json), null, null, null, null, null);
 
         var save = JsonSerializer.Deserialize<SaveFile>(json);
-        return (save?.Player, save?.Quests, save?.StoryQuests, save?.Raid, save?.Version);
+        return (save?.Player, save?.Quests, save?.StoryQuests, save?.SideQuests, save?.Raid, save?.Version);
     }
 
     private static void ApplyPlayer(Player target, Player source)
@@ -89,6 +89,11 @@ public class SaveController : ControllerBase
         target.UnlockedLocations = source.UnlockedLocations is { Count: > 0 }
             ? source.UnlockedLocations
             : new List<string> { "city" };
+        target.UnlockedTraders = source.UnlockedTraders is { Count: > 0 }
+            ? source.UnlockedTraders
+            : new List<string> { "buyer", "bartender" };
+        target.GameTimeMinutes = source.GameTimeMinutes > 0 ? source.GameTimeMinutes : 480;
+        target.JournalThoughts = source.JournalThoughts ?? new();
 
         target.WeaponMelee = source.WeaponMelee; target.WeaponRanged = source.WeaponRanged;
         target.Helmet = source.Helmet; target.Armor = source.Armor; target.Suit = source.Suit; target.Backpack = source.Backpack;
@@ -111,7 +116,7 @@ public class SaveController : ControllerBase
         // (сбрасывается вызывающей стороной через state)
     }
 
-    private static void ApplyQuests(GameStateService state, List<Quest>? quests, List<Quest>? story)
+    private static void ApplyQuests(GameStateService state, List<Quest>? quests, List<Quest>? story, List<Quest>? side)
     {
         if (quests != null)
         {
@@ -122,6 +127,11 @@ public class SaveController : ControllerBase
         {
             state.StoryQuests.Clear();
             state.StoryQuests.AddRange(story);
+        }
+        if (side != null)
+        {
+            state.SideQuests.Clear();
+            state.SideQuests.AddRange(side);
         }
         state.CurrentCombat = null;
         state.PendingEnemy = null;
@@ -202,8 +212,9 @@ public class SaveController : ControllerBase
             Player = _state.Player,
             Quests = _state.Quests,
             StoryQuests = _state.StoryQuests,
+            SideQuests = _state.SideQuests,
             Raid = _state.Raid,
-            Version = "4",
+            Version = "7.5",
         };
         var json = JsonSerializer.Serialize(snapshot, SaveJson);
         System.IO.File.WriteAllText(path, json);
@@ -224,9 +235,9 @@ public class SaveController : ControllerBase
             if (parsed.Player == null) return BadRequest("Ошибка чтения");
 
             ApplyPlayer(_state.Player, parsed.Player);
-            if (parsed.Version == "4")
+            if (parsed.Version == "7.5")
             {
-                ApplyQuests(_state, parsed.Quests, parsed.StoryQuests);
+                ApplyQuests(_state, parsed.Quests, parsed.StoryQuests, parsed.SideQuests);
                 _state.Raid = parsed.Raid is { Finished: false } ? parsed.Raid : null;
                 _state.CurrentCombat = _state.Raid?.Combat;
             }

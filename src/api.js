@@ -70,13 +70,20 @@ export const api = {
   getSkills: () => req("/skills"),
   upgradeSkill: (id) => req(`/skills/${id}/upgrade`, { method: "POST" }),
 
-  // --- Задания ---
+  // --- Задания / сюжет / доска / дневник ---
   getQuests: () => req("/quests"),
   getStory: () => req("/story"),
+  getBoard: () => req("/quests/board"),
+  getDiary: () => req("/diary"),
+  addThought: (text) => req("/diary/thought", { method: "POST", body: { text } }),
+  getGameTime: () => req("/gametime"),
   acceptQuest: (id) => req(`/quests/${id}/accept`, { method: "POST" }),
   completeQuest: (id) => req(`/quests/${id}/complete`, { method: "POST" }),
   questProgress: (type, count) => req("/quests/progress", { method: "POST", body: { type, code: null, count } }),
   getTraderQuests: (traderId) => req(`/quests/trader/${traderId}`),
+  getTraderDialogue: (traderId) => req(`/traders/${traderId}/dialogue`),
+  talkTrader: (traderId) => req(`/traders/${traderId}/talk`, { method: "POST" }),
+  endingChoice: (choice) => req("/story/ending-choice", { method: "POST", body: { choice } }),
 
   // --- Рейд ---
   getLocations: () => req("/raid/locations"),
@@ -92,6 +99,8 @@ export const api = {
   lootCar: (x, y) => req("/raid/loot-car", { method: "POST", body: { x, y } }),
   lootFurniture: (buildingId, furnitureId) =>
     req("/raid/loot-furniture", { method: "POST", body: { buildingId, furnitureId } }),
+  npcTalk: (npcId) => req("/raid/npc/talk", { method: "POST", body: { npcId } }),
+  npcBuy: (npcId, code, count = 1) => req("/raid/npc/buy", { method: "POST", body: { npcId, code, count } }),
   exitRaid: () => req("/raid/exit", { method: "POST" }),
   abandonRaid: () => req("/raid/abandon", { method: "POST" }),
   combatAction: (action, enemyId, itemId, targetX, targetY) =>

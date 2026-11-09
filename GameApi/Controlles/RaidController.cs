@@ -99,8 +99,12 @@ public class RaidController : ControllerBase
         if (!_locations.IsUnlocked(player, loc))
             return BadRequest($"Локация закрыта. {loc.UnlockHint}");
 
+        // Предметы, взятые в рейд, теряют статус «из рейда».
+        ClearFoundInRaidStatus(player);
+
         int effectiveTier = Math.Min(loc.Tier, 1 + player.Level / 2);
         var raid = GenerateRaid(loc, effectiveTier);
+        ApplyRaidProgress(raid, player, QuestType.VisitLocation);
         _state.Raid = raid;
         _state.CurrentCombat = null;
         _state.Persist();
@@ -206,6 +210,7 @@ public class RaidController : ControllerBase
             return BadRequest("Подойдите к зданию ближе.");
 
         b.Entered = true;
+        ApplyRaidProgress(raid, p, QuestType.EnterBuilding, b.Kind);
 
         if (b.HasEnemies && !b.Cleared)
         {
@@ -256,6 +261,7 @@ public class RaidController : ControllerBase
         {
             foreach (var item in b.Loot.ToList())
             {
+                item.FoundInRaid = true;
                 if (InventoryHelper.AddToInventory(p, item))
                     taken.Add(item);
                 else
@@ -304,6 +310,7 @@ public class RaidController : ControllerBase
         var taken = new List<Item>();
         foreach (var item in b.StashLoot.ToList())
         {
+            item.FoundInRaid = true;
             if (InventoryHelper.AddToInventory(p, item))
                 taken.Add(item);
             else
@@ -355,6 +362,7 @@ public class RaidController : ControllerBase
         var taken = new List<Item>();
         foreach (var item in stash.Loot.ToList())
         {
+            item.FoundInRaid = true;
             if (InventoryHelper.AddToInventory(p, item))
                 taken.Add(item);
             else
@@ -405,6 +413,7 @@ public class RaidController : ControllerBase
         var taken = new List<Item>();
         foreach (var item in car.Loot.ToList())
         {
+            item.FoundInRaid = true;
             if (InventoryHelper.AddToInventory(p, item))
                 taken.Add(item);
             else
@@ -456,6 +465,7 @@ public class RaidController : ControllerBase
         var taken = new List<Item>();
         foreach (var item in f.Loot.ToList())
         {
+            item.FoundInRaid = true;
             if (InventoryHelper.AddToInventory(p, item))
                 taken.Add(item);
             else
@@ -495,6 +505,98 @@ public class RaidController : ControllerBase
         return CompleteRaid(raid, survived: true, abandoned: false);
     }
 
+    public record NpcTalkDto(string NpcId);
+    public record NpcBuyDto(string NpcId, string Code, int Count = 1);
+
+    [HttpPost("npc/talk")]
+    public ActionResult<RaidActionResult> TalkNpc([FromBody] NpcTalkDto dto)
+    {
+        var raid = _state.Raid;
+        var p = _state.Player;
+        if (raid == null || raid.Finished) return BadRequest("Рейд не активен.");
+        if (raid.Combat != null) return BadRequest("Сначала завершите бой.");
+        var npc = raid.Npcs.FirstOrDefault(n => n.Id == dto.NpcId);
+        if (npc == null) return NotFound("NPC не найден.");
+        if (Math.Abs(npc.X - raid.PlayerX) > 1 || Math.Abs(npc.Y - raid.PlayerY) > 1 || (npc.X == raid.PlayerX && npc.Y == raid.PlayerY))
+            return BadRequest("Подойдите к персонажу ближе.");
+
+        npc.Talked = true;
+        var given = new List<Item>();
+        // Выдача квестового предмета
+        if (!npc.GaveItem && !string.IsNullOrEmpty(npc.GivesItemCode))
+        {
+            bool okToGive = string.IsNullOrEmpty(npc.RequiresQuestId)
+                || _state.AllQuests().Any(q => q.Id == npc.RequiresQuestId && q.IsAccepted && !q.IsCompleted);
+            // Также разрешим, если есть активный Fetch на этот предмет
+            if (!okToGive) okToGive = _state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && q.Type == QuestType.Fetch
+                && string.Equals(q.TargetItemCode, npc.GivesItemCode, StringComparison.OrdinalIgnoreCase));
+            if (okToGive)
+            {
+                var item = _catalog.Create(npc.GivesItemCode);
+                item.FoundInRaid = true;
+                if (InventoryHelper.AddToInventory(p, item))
+                {
+                    npc.GaveItem = true;
+                    given.Add(item);
+                    AddLog(raid, $"🤝 {npc.Name} передал: {item.Name}.");
+                }
+                else AddLog(raid, "🎒 Инвентарь полон — NPC не смог передать предмет.");
+            }
+        }
+        else if (!npc.GaveItem && npc.GivesItemCode == null)
+        {
+            AddLog(raid, $"💬 {npc.Name}: {(npc.Dialogue.Count > 0 ? npc.Dialogue[_rng.Next(npc.Dialogue.Count)] : "...")}");
+        }
+        else
+        {
+            AddLog(raid, $"💬 {npc.Name}: {(npc.Dialogue.Count > 0 ? npc.Dialogue[0] : "Рад видеть.")}");
+        }
+
+        // Прогресс Talk-квестов по имени NPC
+        foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Talk))
+        {
+            if (!string.IsNullOrEmpty(q.TargetNpcName) && npc.Name.Contains(q.TargetNpcName, StringComparison.OrdinalIgnoreCase))
+                q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+            // если квест привязан к RequiresQuestId этого NPC
+            if (!string.IsNullOrEmpty(npc.RequiresQuestId) && string.Equals(q.Id, npc.RequiresQuestId, StringComparison.OrdinalIgnoreCase))
+                q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+        }
+        _state.Persist();
+        return new RaidActionResult { Raid = raid, Player = p, DroppedLoot = given, Message = given.Count > 0 ? $"{npc.Name} передал предмет." : $"Разговор: {npc.Name}." };
+    }
+
+    [HttpPost("npc/buy")]
+    public ActionResult<RaidActionResult> BuyFromNpc([FromBody] NpcBuyDto dto)
+    {
+        var raid = _state.Raid;
+        var p = _state.Player;
+        if (raid == null || raid.Finished) return BadRequest("Рейд не активен.");
+        if (raid.Combat != null) return BadRequest("Сначала завершите бой.");
+        var npc = raid.Npcs.FirstOrDefault(n => n.Id == dto.NpcId);
+        if (npc == null) return NotFound("NPC не найден.");
+        if (!npc.CanTrade) return BadRequest("Этот персонаж не торгует.");
+        if (Math.Abs(npc.X - raid.PlayerX) > 1 || Math.Abs(npc.Y - raid.PlayerY) > 1) return BadRequest("Подойдите ближе.");
+        if (string.IsNullOrWhiteSpace(dto.Code) || !npc.TradeCodes.Contains(dto.Code, StringComparer.OrdinalIgnoreCase))
+            return BadRequest("У NPC нет такого товара.");
+        int count = Math.Clamp(dto.Count, 1, 10);
+        var tmpl = _catalog.Get(dto.Code);
+        if (tmpl == null) return BadRequest("Предмет не найден.");
+        int cost = Math.Max(1, tmpl.Price) * count;
+        if (p.Money < cost) return BadRequest($"Нужно {cost} ₽");
+        var taken = new List<Item>();
+        for (int i = 0; i < count; i++)
+        {
+            var it = _catalog.Create(dto.Code); it.FoundInRaid = false;
+            if (InventoryHelper.AddToInventory(p, it)) taken.Add(it); else break;
+        }
+        if (taken.Count == 0) return BadRequest("Инвентарь полон.");
+        int paid = Math.Max(1, tmpl.Price) * taken.Count;
+        p.Money -= paid; p.Stats.MoneySpent += paid;
+        AddLog(raid, $"🤝 Куплено у {npc.Name}: {tmpl.Name} ×{taken.Count} (-{paid} ₽).");
+        _state.Persist();
+        return new RaidActionResult { Raid = raid, Player = p, DroppedLoot = taken, Message = "Сделка завершена." };
+    }
+
     [HttpPost("abandon")]
     public ActionResult<RaidActionResult> AbandonRaid()
     {
@@ -512,9 +614,12 @@ public class RaidController : ControllerBase
         p.Stats.CellsPassed += raid.CellsVisited;
         if (survived) p.Stats.RaidsSurvived += 1;
 
-        foreach (var q in _state.Quests.Concat(_state.StoryQuests)
-                     .Where(q => q.IsAccepted && !q.IsCompleted && q.Type == QuestType.Survive))
-            q.Progress += 1;
+        if (survived)
+        {
+            ApplyRaidProgress(raid, p, QuestType.Survive);
+            if (!abandoned)
+                ApplyRaidProgress(raid, p, QuestType.ExtractAlive);
+        }
 
         _state.Raid = null;
         _state.CurrentCombat = null;
@@ -808,6 +913,7 @@ public class RaidController : ControllerBase
         {
             foreach (var item in enemy.Loot.ToList())
             {
+                item.FoundInRaid = true;
                 if (InventoryHelper.AddToInventory(p, item))
                     taken.Add(item);
                 else
@@ -1115,14 +1221,17 @@ public class RaidController : ControllerBase
     private void RunEnemyTurn(RaidState raid, CombatStateDto c, Player p, Enemy enemy)
     {
         enemy.Ap = enemy.ApMax;
+        c.LastAttackerId = null;
 
         int dist = Chebyshev(enemy.X, enemy.Y, c.PlayerX, c.PlayerY);
         bool los = HasLineOfSight(c, enemy.X, enemy.Y, c.PlayerX, c.PlayerY);
 
-        if (!enemy.Ranged || !los || dist > enemy.Range)
+        bool rangedReady = enemy.Ranged && los && dist <= enemy.Range;
+        if (!rangedReady)
         {
-            // Двигаемся к игроку, оставляя 1 AP на удар.
-            int steps = Math.Max(0, enemy.Ap - 1);
+            // Резервируем AP на атаку, чтобы подойти и ударить/выстрелить в тот же ход.
+            int attackReserve = enemy.Ranged ? 2 : 1;
+            int steps = Math.Max(0, enemy.Ap - attackReserve);
             var path = FindPath(c, enemy, c.PlayerX, c.PlayerY, allowTarget: enemy.Ranged);
             int taken = 0;
             foreach (var (nx, ny) in path)
@@ -1150,7 +1259,10 @@ public class RaidController : ControllerBase
         if (!canAttack) return;
 
         int playerDefense = (p.Helmet?.Defense ?? 0) + (p.Armor?.Defense ?? 0) + (p.Suit?.Defense ?? 0) + PerkEffects.DefenseBonus(p);
-        int raw = Math.Max(1, enemy.Damage + (enemy.Ranged ? 2 : 0) - playerDefense);
+        int enemyHit = enemy.Damage + (enemy.Ranged ? 4 : 0);
+        // Защита снижает урон, но не обнуляет его — враги должны ощущаться.
+        int mitigated = enemyHit - (playerDefense * 2 / 3);
+        int raw = Math.Max(Math.Max(2, enemyHit / 4), mitigated);
 
         // Процентная защита брони в зависимости от типа урона.
         int armorPct = enemy.Ranged
@@ -1161,6 +1273,8 @@ public class RaidController : ControllerBase
 
         raw = ApplyCoverToPlayer(c, p, raw, enemy.Ranged);
         if (c.IsDefending) raw = Math.Max(1, raw / 2);
+
+        c.LastAttackerId = enemy.Id;
 
         double dodge = p.DodgeChance; // уже включает Agility + навык уклонения + перк
         if (dodge > 0 && _rng.NextDouble() < dodge)
@@ -1177,6 +1291,7 @@ public class RaidController : ControllerBase
             AddLog(c, "🛡 Парирование: урон снижен.");
         }
 
+        c.LastAttackerId = enemy.Id;
         int before = c.PlayerHp;
         c.PlayerHp = Math.Max(0, c.PlayerHp - raw);
         p.Stats.HpDamaged += Math.Min(before, raw);
@@ -1197,6 +1312,49 @@ public class RaidController : ControllerBase
     //  ПОБЕДА / КИЛЛЫ
     // ============================================================
 
+    private bool IsMutantEnemy(Enemy enemy)
+        => _mutantNames.Contains(enemy.Name) || enemy.Name.Contains("Мутант", StringComparison.OrdinalIgnoreCase);
+
+    private List<Item> CreateMutantParts(Enemy enemy)
+    {
+        Item Part(string code, int count = 1)
+        {
+            var it = _catalog.Create(code);
+            it.Count = count;
+            it.FoundInRaid = true;
+            return it;
+        }
+        if (enemy.Name.Contains("Пёс", StringComparison.OrdinalIgnoreCase))
+            return new() { Part("dog_tail", 1) };
+        if (enemy.Name.Contains("Плоть", StringComparison.OrdinalIgnoreCase))
+            return new() { Part("flesh_eye", 1), Part("flesh_fat", _rng.Next(1, 3)) };
+        if (enemy.Name.Contains("Кабан", StringComparison.OrdinalIgnoreCase))
+            return new() { Part("boar_meat", _rng.Next(1, 3)), Part("boar_hoof", 1) };
+        // Прочие мутанты
+        var pool = new[] { "flesh_fat", "dog_tail", "boar_meat" };
+        return new() { Part(pool[_rng.Next(pool.Length)], 1) };
+    }
+
+    private bool QuestTimeOk(Quest q, Player p)
+    {
+        bool isNight = GameStateService.IsNight(p.GameTimeMinutes);
+        if (q.TimeOfDay == QuestTimeOfDay.Day && isNight) return false;
+        if (q.TimeOfDay == QuestTimeOfDay.Night && !isNight) return false;
+        return true;
+    }
+
+    private void ApplyRaidProgress(RaidState raid, Player p, QuestType type, string? buildingKind = null, int amount = 1)
+    {
+        foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == type))
+        {
+            if (!QuestTimeOk(q, p)) continue;
+            if (!string.IsNullOrEmpty(q.TargetLocationId) && !string.Equals(q.TargetLocationId, raid.LocationId, StringComparison.OrdinalIgnoreCase)) continue;
+            if (type == QuestType.EnterBuilding && !string.IsNullOrEmpty(q.TargetBuildingKind)
+                && !string.Equals(q.TargetBuildingKind, buildingKind, StringComparison.OrdinalIgnoreCase)) continue;
+            q.Progress += amount;
+        }
+    }
+
     private void OnEnemyKilled(RaidState raid, CombatStateDto c, Player p, Enemy enemy)
     {
         AddLog(c, $"☠️ {enemy.Name} повержен.");
@@ -1205,28 +1363,52 @@ public class RaidController : ControllerBase
 
         if (enemy.Loot.Count == 0 && enemy.Money == 0)
         {
-            int luckRolls = Math.Max(0, (p.Luck - 1) / 3);
-            var loot = _loot.Generate(c.Tier, 1, enemy.IsBoss, PerkEffects.ExtraLootRolls(p) + luckRolls);
-            enemy.Loot = loot.Items;
-            enemy.Money = loot.Money;
+            if (IsMutantEnemy(enemy))
+            {
+                enemy.Loot = CreateMutantParts(enemy);
+                enemy.Money = 0;
+            }
+            else
+            {
+                int luckRolls = Math.Max(0, (p.Luck - 1) / 3);
+                var loot = _loot.Generate(c.Tier, 1, enemy.IsBoss, PerkEffects.ExtraLootRolls(p) + luckRolls);
+                enemy.Loot = loot.Items;
+                enemy.Money = loot.Money;
+            }
         }
 
-        // Убийство врага даёт 1–30 патронов под оружие игрока (если есть огнестрел).
-        var ranged = p.WeaponRanged;
-        if (ranged != null && !string.IsNullOrWhiteSpace(ranged.Caliber))
+        if (enemy.IsBoss)
+            EnsureBossIntelDrop(enemy, raid.LocationId);
+
+        // Патроны — только с гуманоидных врагов (не с мутантов).
+        if (!IsMutantEnemy(enemy))
         {
-            int ammoCount = _rng.Next(1, 31);
-            var ammo = _catalog.CreateAmmo(ranged.Caliber, 0.05, WeaponCatalog.AmmoPriceFor(ranged.Caliber), $"Патроны {ranged.Caliber}.");
-            ammo.Count = ammoCount;
-            InventoryHelper.AddToInventory(p, ammo);
-            AddLog(c, $"🔫 Найдено патронов: {ammoCount}× {ranged.Caliber}.");
+            var ranged = p.WeaponRanged;
+            if (ranged != null && !string.IsNullOrWhiteSpace(ranged.Caliber))
+            {
+                int ammoCount = _rng.Next(1, 31);
+                var ammo = _catalog.CreateAmmo(ranged.Caliber, 0.05, WeaponCatalog.AmmoPriceFor(ranged.Caliber), $"Патроны {ranged.Caliber}.");
+                ammo.Count = ammoCount;
+                ammo.FoundInRaid = true;
+                InventoryHelper.AddToInventory(p, ammo);
+                AddLog(c, $"🔫 Найдено патронов: {ammoCount}× {ranged.Caliber}.");
+            }
         }
 
-        foreach (var q in _state.Quests.Concat(_state.StoryQuests)
-                     .Where(q => q.IsAccepted && !q.IsCompleted && q.Type == QuestType.Kill))
+        bool isNight = GameStateService.IsNight(p.GameTimeMinutes);
+        foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed))
         {
-            if (q.TargetBoss && enemy.IsBoss) q.Progress += 1;
-            else if (!q.TargetBoss) q.Progress += 1;
+            if (q.TimeOfDay == QuestTimeOfDay.Day && isNight) continue;
+            if (q.TimeOfDay == QuestTimeOfDay.Night && !isNight) continue;
+            if (!string.IsNullOrEmpty(q.TargetLocationId) && !string.Equals(q.TargetLocationId, raid.LocationId, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!string.IsNullOrEmpty(q.TargetEnemyName) && !enemy.Name.Contains(q.TargetEnemyName, StringComparison.OrdinalIgnoreCase)) continue;
+
+            if (q.Type == QuestType.Kill || q.Type == QuestType.KillBoss)
+            {
+                if (q.TargetBoss && !enemy.IsBoss) continue;
+                if (q.Type == QuestType.KillBoss && !enemy.IsBoss) continue;
+                q.Progress += 1;
+            }
         }
     }
 
@@ -1430,6 +1612,7 @@ public class RaidController : ControllerBase
         }
 
         SpawnRaidCars(raid, loc, tier);
+        SpawnRaidNpcs(raid, loc, tier);
 
         // Переход в следующий сектор локации (на некоторых локациях).
         if (raid.Sector < raid.MaxSectors)
@@ -1457,6 +1640,83 @@ public class RaidController : ControllerBase
         if (raid.Sector < raid.MaxSectors)
             raid.Log.Add("🧭 На этой локации можно пройти дальше (ищите переход ➜).");
         return raid;
+    }
+
+    private record ScriptNpcDef(string Name, string Icon, string[] Locations, string[] Dialogue, string? GivesItemCode = null, string? RequiresQuestId = null, bool CanTrade = false);
+    private static readonly ScriptNpcDef[] ScriptNpcs = new[]
+    {
+        new ScriptNpcDef("Борян", "/neutrals_frendly/script/Борян.jpg", new[]{"city","kordon"}, new[]{"Эй, сталкер! Не стреляй, я свой.","Слышал, на Кордоне нашли чей-то груз. Погляди там.","Если принесёшь мне записку — помогу чем смогу."}, "q_note", "npc_talk_boryan"),
+        new ScriptNpcDef("Варшава", "/neutrals_frendly/script/Варшава.jpg", new[]{"kordon","factory"}, new[]{"Тихо тут... слишком тихо.","На заводе видели людей в форме. Не наши.","Держи папку — сам нашёл, мне она не нужна."}, "q_intel_folder", "npc_talk_varshava"),
+        new ScriptNpcDef("Доктор", "/neutrals_frendly/script/Доктор.jpg", new[]{"city","mall"}, new[]{"Раны лечу, вопросы — потом.","В этой зоне память лечить сложнее, чем пулевые.","Возьми документы, они медицинские — вдруг пригодятся."}, "q_docs_folder", "npc_talk_doctor"),
+        new ScriptNpcDef("Дух", "/neutrals_frendly/script/Дух.png", new[]{"forest","predbannik"}, new[]{"Лес всё слышит. И всё помнит.","Ночью сюда лучше не ходить.","Я нашёл старые бумаги у тропы."}, "q_old_docs", "npc_talk_duh"),
+        new ScriptNpcDef("Клавишник", "/neutrals_frendly/script/Клавишник.jpg", new[]{"factory","military"}, new[]{"Электроника — мой конёк.","На базе хранится что-то важное. Флешки, коды...","Могу передать техническую документацию."}, "q_tech_docs", "npc_talk_klav"),
+        new ScriptNpcDef("Майор Маршин", "/neutrals_frendly/script/Майор Маршин.jpg", new[]{"military","outskirts"}, new[]{"Стой. Документы.","Я знаю про правительственный груз. И знаю, кто за ним охотился.","Вот закрытый кейс — передай тем, кому доверяешь."}, "q_closed_case", "npc_talk_marshin"),
+        new ScriptNpcDef("Немец", "/neutrals_frendly/script/Немец.png", new[]{"mall","outskirts"}, new[]{"Аккуратность прежде всего.","Тут всё имеет цену. Даже информация.","Стальной ящик — берёшь, отвечаешь."}, "q_steel_box", "npc_talk_nemets"),
+        new ScriptNpcDef("Оззи", "/neutrals_frendly/script/Оззи.jpg", new[]{"suburb","gradirni"}, new[]{"Курьер прибыл. Опоздал, но прибыл.","На Градирнях неспокойно. Наёмники нервничают.","Кейс с артефактами — не открывать без нужды."}, "q_artifact_case", "npc_talk_ozzi"),
+        new ScriptNpcDef("Перец", "/neutrals_frendly/script/Перец.png", new[]{"kordon","forest"}, new[]{"Жарко сегодня для Зоны, а?","У меня есть припасы — могу поменяться.",}, null, "npc_talk_perets", true),
+        new ScriptNpcDef("Пётр", "/neutrals_frendly/script/Пётр.jpg", new[]{"city","predbannik"}, new[]{"Работаю тут давно. Видел всякое.","Твой груз? Может, и видел. Но память штука ненадёжная."}, null, "npc_talk_petr"),
+        new ScriptNpcDef("Умник", "/neutrals_frendly/script/Умник.jpg", new[]{"factory","lab" /*lab not a loc id, harmless*/,"mall"}, new[]{"Логика проста: если груз секретный — его спрятали надёжно.","Документацию найти можно. Люди всегда оставляют следы."}, "q_tech_docs", "npc_talk_umnik"),
+        new ScriptNpcDef("Учёный", "/neutrals_frendly/script/Учёный.jpg", new[]{"predbannik","gradirni","forest"}, new[]{"Аномальная активность растёт.","Артефакты нужно хранить в контейнерах. Вот образец."}, "art_kaplya", "npc_talk_ucheniy"),
+    };
+
+    private void SpawnRaidNpcs(RaidState raid, Location loc, int tier)
+    {
+        var genericImgs = new List<string>();
+        foreach (var ext in new[] { "png", "jpg" })
+            for (int i = 1; i <= 24; i++) { /* placeholder list built below */ }
+        var imgs = new[] {
+            "/neutrals_frendly/1.png","/neutrals_frendly/2.jpg","/neutrals_frendly/3.png","/neutrals_frendly/4.png",
+            "/neutrals_frendly/5.png","/neutrals_frendly/6.png","/neutrals_frendly/7.png","/neutrals_frendly/8.png",
+            "/neutrals_frendly/9.png","/neutrals_frendly/10.png","/neutrals_frendly/11.png","/neutrals_frendly/12.png",
+            "/neutrals_frendly/13.png","/neutrals_frendly/14.png","/neutrals_frendly/15.png","/neutrals_frendly/16.png",
+            "/neutrals_frendly/17.png","/neutrals_frendly/18.jpg","/neutrals_frendly/19.jpg","/neutrals_frendly/20.jpg",
+            "/neutrals_frendly/21.jpg","/neutrals_frendly/22.jpg","/neutrals_frendly/23.jpg","/neutrals_frendly/24.jpg",
+        };
+        string[] gNames = { "Сталкер", "Одиночка", "Бродяга", "Охотник", "Выживший", "Путник", "Диггер", "Разведчик" };
+        string[] gLines = { "Не шуми — тут рядом твари.", "Могу обменяться, если есть что предложить.", "Видел врагов на севере.", "Удачи в рейде.", "Я просто прохожу мимо." };
+
+        bool IsFree(int x, int y) => GetTile(raid, x, y)?.Type == RaidTileTypes.Ground
+            && !raid.Mutants.Any(m => m.X == x && m.Y == y) && !raid.Npcs.Any(n => n.X == x && n.Y == y)
+            && !raid.Cars.Any(c => c.X == x && c.Y == y) && !raid.Stashes.Any(s => s.X == x && s.Y == y)
+            && !(Math.Abs(x - raid.PlayerX) + Math.Abs(y - raid.PlayerY) < 3);
+
+        (int x,int y)? Pick()
+        {
+            for (int t = 0; t < 120; t++) { int x=_rng.Next(1,raid.Width-1), y=_rng.Next(1,raid.Height-1); if (IsFree(x,y)) return (x,y); }
+            return null;
+        }
+
+        // Скриптовые NPC — если их локация совпадает и (нет требования квеста ИЛИ квест принят/актуален)
+        foreach (var sn in ScriptNpcs.Where(s => s.Locations.Contains(loc.Id, StringComparer.OrdinalIgnoreCase)).Take(2))
+        {
+            bool relevant = sn.RequiresQuestId == null || _state.AllQuests().Any(q => q.Id == sn.RequiresQuestId && (q.IsAccepted || !q.IsCompleted));
+            // Спавним с шансом; если квест принят — почти всегда
+            bool questAccepted = sn.RequiresQuestId != null && _state.AllQuests().Any(q => q.Id == sn.RequiresQuestId && q.IsAccepted && !q.IsCompleted);
+            if (!relevant && !questAccepted) continue;
+            if (!questAccepted && _rng.NextDouble() > 0.45) continue;
+            var pos = Pick(); if (pos == null) continue;
+            raid.Npcs.Add(new RaidNpc
+            {
+                Name = sn.Name, Icon = sn.Icon, X = pos.Value.x, Y = pos.Value.y, Scripted = true,
+                Dialogue = sn.Dialogue.ToList(), GivesItemCode = sn.GivesItemCode, RequiresQuestId = sn.RequiresQuestId,
+                CanTrade = sn.CanTrade, TradeCodes = sn.CanTrade ? new List<string>{"bandage","water","bread","canned"} : new()
+            });
+        }
+
+        // Обычные нейтральные
+        int gCount = _rng.NextDouble() < 0.7 ? _rng.Next(1, 3) : 0;
+        for (int i = 0; i < gCount; i++)
+        {
+            var pos = Pick(); if (pos == null) break;
+            var img = imgs[_rng.Next(imgs.Length)];
+            bool canTrade = _rng.NextDouble() < 0.35;
+            raid.Npcs.Add(new RaidNpc
+            {
+                Name = gNames[_rng.Next(gNames.Length)], Icon = img, X = pos.Value.x, Y = pos.Value.y, Scripted = false,
+                Dialogue = Enumerable.Range(0, _rng.Next(1,3)).Select(_ => gLines[_rng.Next(gLines.Length)]).ToList(),
+                CanTrade = canTrade, TradeCodes = canTrade ? new List<string>{"bandage","water","bread","scrap","bolt","nuts"} : new()
+            });
+        }
     }
 
     private void SpawnRaidCars(RaidState raid, Location loc, int tier)
@@ -1509,12 +1769,12 @@ public class RaidController : ControllerBase
         (string name, string icon)[] pool = kind switch
         {
             "house" or "hut" or "bath" or "barn" => new[] { ("Шкаф", "🗄️"), ("Тумбочка", "🪑"), ("Кровать", "🛏️"), ("Стол", "🪵"), ("Комод", "📦"), ("Печь", "🔥") },
-            "shop" or "department" or "cafe" => new[] { ("Прилавок", "🧾"), ("Стеллаж", "🗄️"), ("Касса", "💰"), ("Ящик", "📦"), ("Холодильник", "🧊") },
+            "shop" or "department" or "cafe" => new[] { ("Прилавок", "🧾"), ("Стеллаж", "🗄️"), ("Касса", "💰"), ("Деревянный ящик", "📦"), ("Холодильник", "🧊") },
             "warehouse" or "garage" or "workshop" or "factory" or "boiler" => new[] { ("Верстак", "🔧"), ("Ящик с инструментами", "🧰"), ("Стеллаж", "🗄️"), ("Металлический шкаф", "🗄️"), ("Бочка", "🛢️") },
-            "armory" or "barracks" or "checkpoint" or "military" => new[] { ("Оружейный шкаф", "🗄️"), ("Тумбочка", "🪑"), ("Койка", "🛏️"), ("Ящик", "📦"), ("Сейф", "🔒") },
-            "medbay" => new[] { ("Медицинский шкаф", "💊"), ("Кушетка", "🛏️"), ("Стол", "🪵"), ("Ящик", "📦") },
+            "armory" or "barracks" or "checkpoint" or "military" => new[] { ("Оружейный шкаф", "🗄️"), ("Тумбочка", "🪑"), ("Койка", "🛏️"), ("Металлический ящик", "📦"), ("Сейф", "🔒") },
+            "medbay" => new[] { ("Медицинский шкаф", "💊"), ("Кушетка", "🛏️"), ("Стол", "🪵"), ("Деревянный ящик", "📦") },
             "lab" or "office" or "school" => new[] { ("Стол", "🪵"), ("Шкаф", "🗄️"), ("Сейф", "🔒"), ("Полка", "📚"), ("Тумба", "📦") },
-            _ => new[] { ("Шкаф", "🗄️"), ("Ящик", "📦"), ("Стол", "🪵"), ("Тумбочка", "🪑") },
+            _ => new[] { ("Шкаф", "🗄️"), ("Деревянный ящик", "📦"), ("Стол", "🪵"), ("Тумбочка", "🪑") },
         };
 
         int maxBySize = Math.Clamp(b.Width * b.Height, 1, 4);
@@ -1537,12 +1797,36 @@ public class RaidController : ControllerBase
             {
                 Name = pick.name,
                 Icon = pick.icon,
+                Sprite = FurnitureSprite(pick.name),
                 Loot = loot.Items,
                 Money = Math.Max(0, loot.Money / 2),
                 Xp = Math.Max(1, loot.Xp / 3),
             });
         }
     }
+
+    private static string? FurnitureSprite(string name) => name switch
+    {
+        "Шкаф" or "Металлический шкаф" => "/blocks/шкаф.png",
+        "Тумбочка" or "Комод" or "Тумба" => "/blocks/тумба.png",
+        "Кровать" or "Койка" or "Кушетка" => "/blocks/кровать.png",
+        "Стол" => "/blocks/стол.png",
+        "Печь" => "/blocks/печь.png",
+        "Прилавок" => "/blocks/прилавок.png",
+        "Стеллаж" => "/blocks/стеллаж.png",
+        "Касса" => "/blocks/касса.png",
+        "Холодильник" => "/blocks/холодильник.png",
+        "Верстак" => "/blocks/верстак.png",
+        "Ящик с инструментами" => "/blocks/ящик с инструментами.png",
+        "Деревянный ящик" or "Ящик" => "/blocks/деревянный_ящик.png",
+        "Металлический ящик" => "/blocks/Металлический_ящик.png",
+        "Бочка" => "/blocks/бочка.png",
+        "Оружейный шкаф" => "/blocks/оружейный_шкаф.png",
+        "Сейф" => "/blocks/сейф.png",
+        "Медицинский шкаф" => "/blocks/медицинский шкаф.png",
+        "Полка" => "/blocks/полка.png",
+        _ => null,
+    };
 
     private void SpawnRaidMutants(RaidState raid, Location loc)
     {
@@ -1577,7 +1861,7 @@ public class RaidController : ControllerBase
 
                 double levelScale = 1.0 + Math.Max(0, _state.Player.Level - 1) * 0.045;
                 int hp = (int)Math.Round((chosen.BaseHp + (raid.Tier - 1) * 10 + _rng.Next(0, 8)) * levelScale);
-                int dmg = Math.Max(1, (int)Math.Round((chosen.BaseDamage + (raid.Tier - 1) * 2 + _rng.Next(0, 3)) * levelScale));
+                int dmg = Math.Max(2, (int)Math.Round((chosen.BaseDamage + (raid.Tier - 1) * 3 + _rng.Next(0, 4)) * levelScale));
 
                 raid.Mutants.Add(new RaidMutant
                 {
@@ -1651,80 +1935,80 @@ public class RaidController : ControllerBase
                 Add("Электроника", "📺", 3, 2, "department", "Витрины с техникой, большая часть уже разграблена.");
                 Add("Одежда", "👕", 2, 2, "department", "Манекены без одежды и рассыпанные вешалки.");
                 Add("Продукты", "🛒", 3, 2, "department", "Пустые полки и перевёрнутые тележки.");
-                Add("Аптека", "💊", 2, 2, "department", "Разбитые витрины с лекарствами.");
+                Add("Аптека", "/blocks/аптека.jpg", 2, 2, "department", "Разбитые витрины с лекарствами.");
                 Add("Спорттовары", "🏋", 2, 3, "department", "Тренажёры и стойки с инвентарём.");
                 Add("Книги", "📚", 2, 2, "department", "Тихий отдел с высокими стеллажами.");
                 Add("Игрушки", "🧸", 1, 1, "department", "Маленький магазин игрушек.");
-                Add("Кафе", "☕", 2, 2, "department", "Стойка, столики и запах старого кофе.");
+                Add("Кафе", "/blocks/Кафе.jpg", 2, 2, "department", "Стойка, столики и запах старого кофе.");
                 Add("Кинотеатр", "🎬", 3, 3, "department", "Тёмный зал с рядами кресел.");
                 break;
 
             case "forest":
-                Add("Сторожка", "🛖", 1, 1, "hut", "Крошечная сторожка лесника.");
-                Add("Охотничий домик", "🏠", 2, 2, "hut", "Домик с заколоченными окнами.");
-                Add("Сарай", "🪵", 1, 2, "shed", "Старый сарай с инструментами.");
-                Add("Землянка", "🕳", 1, 1, "hut", "Землянка, пахнущая сыростью.");
+                Add("Сторожка", "/blocks/wooden_house.png", 1, 1, "hut", "Крошечная сторожка лесника.");
+                Add("Охотничий домик", "/blocks/house.png", 2, 2, "hut", "Домик с заколоченными окнами.");
+                Add("Сарай", "/blocks/сарай.png", 1, 2, "shed", "Старый сарай с инструментами.");
+                Add("Землянка", "/blocks/землянка.jpg", 1, 1, "hut", "Землянка, пахнущая сыростью.");
                 break;
 
             case "military":
-                Add("Казарма", "🛏", 3, 2, "barracks", "Ряды коек и оружейные пирамиды.");
-                Add("Казарма", "🛏", 2, 3, "barracks", "Ещё одна казарма, следы недавнего присутствия.");
+                Add("Казарма", "/blocks/kazarma.png", 3, 2, "barracks", "Ряды коек и оружейные пирамиды.");
+                Add("Казарма", "/blocks/kazarma.png", 2, 3, "barracks", "Ещё одна казарма, следы недавнего присутствия.");
                 Add("Штаб", "🏢", 2, 2, "office", "Карты, рации и тяжёлые сейфы.");
-                Add("Арсенал", "🔫", 2, 3, "armory", "Оружейная комната с усиленной дверью.");
-                Add("Склад", "📦", 3, 3, "warehouse", "Армейские ящики и запчасти.");
-                Add("КПП", "🚧", 1, 1, "checkpoint", "Маленький блокпост у входа.");
-                Add("Медсанчасть", "⛑", 2, 2, "medbay", "Медицинские шкафы и кушетки.");
-                Add("Гараж", "🚛", 3, 2, "garage", "Брошенная техника под брезентом.");
+                Add("Арсенал", "/blocks/арсенал.jpg", 2, 3, "armory", "Оружейная комната с усиленной дверью.");
+                Add("Склад", "/blocks/storage.jpg", 3, 3, "warehouse", "Армейские ящики и запчасти.");
+                Add("КПП", "/blocks/blockpost_kpp.png", 1, 1, "checkpoint", "Маленький блокпост у входа.");
+                Add("Медсанчасть", "/blocks/медсанчасть.jpg", 2, 2, "medbay", "Медицинские шкафы и кушетки.");
+                Add("Гараж", "/blocks/garage.png", 3, 2, "garage", "Брошенная техника под брезентом.");
                 break;
 
             case "factory":
-                Add("Цех", "🏭", 3, 3, "workshop", "Огромный цех с ржавыми станками.");
-                Add("Склад", "📦", 2, 3, "warehouse", "Стеллажи с ящиками и деталями.");
-                Add("Мастерская", "🔧", 2, 2, "workshop", "Верстаки, инструменты, запах масла.");
-                Add("Лаборатория", "⚗", 2, 2, "lab", "Странное оборудование и колбы.");
-                Add("Бытовка", "🚪", 1, 1, "office", "Комната отдыха рабочих.");
-                Add("Котельная", "🔥", 2, 2, "boiler", "Гулкое помещение с трубами.");
+                Add("Цех", "/blocks/цех.jpg", 3, 3, "workshop", "Огромный цех с ржавыми станками.");
+                Add("Склад", "/blocks/storage.jpg", 2, 3, "warehouse", "Стеллажи с ящиками и деталями.");
+                Add("Мастерская", "/blocks/мастерская.png", 2, 2, "workshop", "Верстаки, инструменты, запах масла.");
+                Add("Лаборатория", "/blocks/лаборатория.png", 2, 2, "lab", "Странное оборудование и колбы.");
+                Add("Бытовка", "/blocks/бытовка.png", 1, 1, "office", "Комната отдыха рабочих.");
+                Add("Котельная", "/blocks/Котельная.png", 2, 2, "boiler", "Гулкое помещение с трубами.");
                 break;
 
             case "kordon":
-                Add("Жилой дом", "🏠", 2, 1, "house", "Жилой дом. Внутри можно найти мебель и вещи.");
-                Add("Обветшалый дом", "🏚️", 1, 1, "house", "Обветшалый дом. Дверь не заперта, но внутри может быть опасно.");
-                Add("Деревянный дом", "🛖", 2, 1, "house", "Старый деревянный дом.");
-                Add("Дом", "🏠", 2, 2, "house", "Деревенский дом с печью.");
-                Add("Сарай", "🪵", 1, 1, "shed", "Покосившийся сарай.");
-                Add("Блокпост", "🚧", 1, 2, "checkpoint", "Мешки с песком и старый УАЗ.");
-                Add("Колодец", "🪣", 1, 1, "well", "Колодец с чистой водой.");
-                Add("Амбар", "🌾", 2, 2, "barn", "Амбар, набитый сеном и хламом.");
-                Add("Баня", "🧖", 1, 1, "bath", "Маленькая баня.");
-                Add("Магазин", "🏪", 2, 2, "shop", "Деревенский магазин.");
+                Add("Жилой дом", "/blocks/house.png", 2, 1, "house", "Жилой дом. Внутри можно найти мебель и вещи.");
+                Add("Обветшалый дом", "/blocks/dilapidated_house.png", 1, 1, "house", "Обветшалый дом. Дверь не заперта, но внутри может быть опасно.");
+                Add("Деревянный дом", "/blocks/wooden_house.png", 2, 1, "house", "Старый деревянный дом.");
+                Add("Дом", "/blocks/house.png", 2, 2, "house", "Деревенский дом с печью.");
+                Add("Сарай", "/blocks/сарай.png", 1, 1, "shed", "Покосившийся сарай.");
+                Add("Блокпост", "/blocks/blockpost_kpp.png", 1, 2, "checkpoint", "Мешки с песком и старый УАЗ.");
+                Add("Колодец", "/blocks/колодец.jpg", 1, 1, "well", "Колодец с чистой водой.");
+                Add("Амбар", "/blocks/амбар.png", 2, 2, "barn", "Амбар, набитый сеном и хламом.");
+                Add("Баня", "/blocks/banya.jpg", 1, 1, "bath", "Маленькая баня.");
+                Add("Магазин", "/blocks/store.png", 2, 2, "shop", "Деревенский магазин.");
                 break;
 
             case "city":
-                Add("Жилой дом", "🏠", 2, 1, "house", "Жилой дом. Можно зайти и обыскать мебель.");
-                Add("Обветшалый дом", "🏚️", 1, 1, "house", "Обветшалый дом с выбитыми окнами.");
-                Add("Деревянный дом", "🛖", 1, 1, "house", "Небольшой деревянный дом.");
-                Add("Панелька", "🏢", 3, 2, "house", "Обрушенный жилой дом.");
-                Add("Магазин", "🏪", 2, 2, "shop", "Небольшой магазин.");
-                Add("Аптека", "💊", 1, 1, "shop", "Аптека с разбитой витриной.");
-                Add("Гараж", "🚗", 2, 2, "garage", "Гараж с брошенной машиной.");
-                Add("Склад", "📦", 2, 2, "warehouse", "Запертый склад.");
-                Add("Котельная", "🔥", 1, 1, "boiler", "Котельная в подвале.");
-                Add("Школа", "🏫", 3, 2, "school", "Школа с длинными коридорами.");
-                Add("Кафе", "☕", 1, 1, "shop", "Маленькое кафе.");
+                Add("Жилой дом", "/blocks/house.png", 2, 1, "house", "Жилой дом. Можно зайти и обыскать мебель.");
+                Add("Обветшалый дом", "/blocks/dilapidated_house.png", 1, 1, "house", "Обветшалый дом с выбитыми окнами.");
+                Add("Деревянный дом", "/blocks/wooden_house.png", 1, 1, "house", "Небольшой деревянный дом.");
+                Add("Панелька", "/blocks/panelka.png", 3, 2, "house", "Обрушенный жилой дом.");
+                Add("Магазин", "/blocks/store.png", 2, 2, "shop", "Небольшой магазин.");
+                Add("Аптека", "/blocks/аптека.jpg", 1, 1, "shop", "Аптека с разбитой витриной.");
+                Add("Гараж", "/blocks/garage.png", 2, 2, "garage", "Гараж с брошенной машиной.");
+                Add("Склад", "/blocks/storage.jpg", 2, 2, "warehouse", "Запертый склад.");
+                Add("Котельная", "/blocks/Котельная.png", 1, 1, "boiler", "Котельная в подвале.");
+                Add("Школа", "/blocks/school.jpg", 3, 2, "school", "Школа с длинными коридорами.");
+                Add("Кафе", "/blocks/Кафе.jpg", 1, 1, "shop", "Маленькое кафе.");
                 break;
 
             default:
-                Add("Жилой дом", "🏠", 2, 1, "house", "Жилой дом. Можно зайти и обыскать мебель.");
-                Add("Обветшалый дом", "🏚️", 1, 1, "house", "Обветшалый дом. Внутри тихо — или нет.");
-                Add("Деревянный дом", "🛖", 2, 1, "house", "Деревянный дом с покосившейся крышей.");
-                Add("Магазин", "🏪", 2, 2, "shop", "Небольшой магазин.");
-                Add("Панелька", "🏢", 3, 2, "house", "Обрушенный жилой дом.");
-                Add("Аптека", "💊", 1, 1, "shop", "Аптека с разбитой витриной.");
-                Add("Гараж", "🚗", 2, 2, "garage", "Гараж с брошенной машиной.");
-                Add("Склад", "📦", 2, 2, "warehouse", "Запертый склад.");
-                Add("Котельная", "🔥", 1, 1, "boiler", "Котельная в подвале.");
-                Add("Школа", "🏫", 3, 2, "school", "Школа с длинными коридорами.");
-                Add("Кафе", "☕", 1, 1, "shop", "Маленькое кафе.");
+                Add("Жилой дом", "/blocks/house.png", 2, 1, "house", "Жилой дом. Можно зайти и обыскать мебель.");
+                Add("Обветшалый дом", "/blocks/dilapidated_house.png", 1, 1, "house", "Обветшалый дом. Внутри тихо — или нет.");
+                Add("Деревянный дом", "/blocks/wooden_house.png", 2, 1, "house", "Деревянный дом с покосившейся крышей.");
+                Add("Магазин", "/blocks/store.png", 2, 2, "shop", "Небольшой магазин.");
+                Add("Панелька", "/blocks/panelka.png", 3, 2, "house", "Обрушенный жилой дом.");
+                Add("Аптека", "/blocks/аптека.jpg", 1, 1, "shop", "Аптека с разбитой витриной.");
+                Add("Гараж", "/blocks/garage.png", 2, 2, "garage", "Гараж с брошенной машиной.");
+                Add("Склад", "/blocks/storage.jpg", 2, 2, "warehouse", "Запертый склад.");
+                Add("Котельная", "/blocks/Котельная.png", 1, 1, "boiler", "Котельная в подвале.");
+                Add("Школа", "/blocks/school.jpg", 3, 2, "school", "Школа с длинными коридорами.");
+                Add("Кафе", "/blocks/Кафе.jpg", 1, 1, "shop", "Маленькое кафе.");
                 break;
         }
 
@@ -1753,17 +2037,7 @@ public class RaidController : ControllerBase
     };
 
     private static double EnemyChanceForBuilding(Location loc, string kind)
-    {
-        double baseChance = EnemyChance(loc);
-        return kind switch
-        {
-            "house" or "hut" or "shed" or "bath" or "well" or "barn" => Math.Max(0.15, baseChance - 0.35),
-            "shop" or "cafe" or "department" or "school" or "office" => Math.Max(0.20, baseChance - 0.20),
-            "garage" or "workshop" or "warehouse" or "boiler" => Math.Max(0.25, baseChance - 0.10),
-            "armory" or "barracks" or "checkpoint" or "lab" or "medbay" => Math.Min(0.95, baseChance + 0.10),
-            _ => baseChance,
-        };
-    }
+        => 0.5; // 50/50 во всех зданиях
 
     private bool IsRaidReachable(RaidState raid)
     {
@@ -1957,25 +2231,8 @@ public class RaidController : ControllerBase
 
         // Естественные укрытия на открытой местности — пни, камни, ямы.
         int safeR = Math.Max(1, Math.Min(cw, ch) / 4);
-        void PlaceCover(string type, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                for (int tries = 0; tries < 100; tries++)
-                {
-                    int x = _rng.Next(0, cw);
-                    int y = _rng.Next(0, ch);
-                    if (x == combat.PlayerX && y == combat.PlayerY) continue;
-                    if (Math.Abs(x - combat.PlayerX) <= safeR && Math.Abs(y - combat.PlayerY) <= safeR) continue;
-                    var t = GetCombatTile(combat, x, y);
-                    if (t == null || t.Type != CombatTileTypes.Empty) continue;
-                    t.Type = type;
-                    break;
-                }
-            }
-        }
-        PlaceCover(CombatTileTypes.Wall, Math.Clamp(1 + raid.Tier / 3, 1, 3));
-        PlaceCover(CombatTileTypes.Sandbag, Math.Clamp(2 + raid.Tier / 2, 2, 5));
+        PlaceWallShapes(combat, cw, ch, safeR, Math.Clamp(2 + raid.Tier / 2, 2, 6));
+        PlaceCoverSingles(combat, cw, ch, safeR, CombatTileTypes.Sandbag, Math.Clamp(2 + raid.Tier / 2, 2, 5));
 
         int enemySafeR = Math.Max(2, Math.Min(cw, ch) / 2 - 1);
         foreach (var mutant in group)
@@ -2072,25 +2329,8 @@ public class RaidController : ControllerBase
         int sandbags = Math.Clamp((int)Math.Round((4 + raid.Tier / 2.0) * areaScale), 1, Math.Max(2, cw * ch / 6));
         int safeR = Math.Max(1, Math.Min(cw, ch) / 4);
 
-        void PlaceCover(string type, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                for (int tries = 0; tries < 120; tries++)
-                {
-                    int x = _rng.Next(0, cw);
-                    int y = _rng.Next(0, ch);
-                    if (x == combat.PlayerX && y == combat.PlayerY) continue;
-                    if (Math.Abs(x - combat.PlayerX) <= safeR && Math.Abs(y - combat.PlayerY) <= safeR) continue;
-                    var t = GetCombatTile(combat, x, y);
-                    if (t == null || t.Type != CombatTileTypes.Empty) continue;
-                    t.Type = type;
-                    break;
-                }
-            }
-        }
-        PlaceCover(CombatTileTypes.Wall, walls);
-        PlaceCover(CombatTileTypes.Sandbag, sandbags);
+        PlaceWallShapes(combat, cw, ch, safeR, walls);
+        PlaceCoverSingles(combat, cw, ch, safeR, CombatTileTypes.Sandbag, sandbags);
 
         // Враги.
         int enemySafeR = Math.Max(2, Math.Min(cw, ch) / 2 - 1);
@@ -2233,6 +2473,7 @@ public class RaidController : ControllerBase
                 Kind = CombatObjectKinds.MainLoot,
                 Name = "Полезный хлам",
                 Icon = "📦",
+                Sprite = "/blocks/деревянный_ящик.png",
                 Looted = false,
                 BlocksMovement = false,
             });
@@ -2244,6 +2485,7 @@ public class RaidController : ControllerBase
             Kind = CombatObjectKinds.Exit,
             Name = "Выход",
             Icon = "🚪",
+            Sprite = "/blocks/exit.png",
             Looted = false,
             BlocksMovement = false,
             X = combat.PlayerX,
@@ -2300,6 +2542,7 @@ public class RaidController : ControllerBase
             if (f == null) return (false, "Объект не найден.", new List<Item>());
             foreach (var item in f.Loot.ToList())
             {
+                item.FoundInRaid = true;
                 if (InventoryHelper.AddToInventory(p, item)) taken.Add(item);
                 else AddLog(c, "🎒 Инвентарь полон — часть добычи осталась.");
             }
@@ -2318,6 +2561,7 @@ public class RaidController : ControllerBase
             if (!b.HasStash || b.StashLooted) { obj.Looted = true; return (false, "Тайник уже обыскан.", new List<Item>()); }
             foreach (var item in b.StashLoot.ToList())
             {
+                item.FoundInRaid = true;
                 if (InventoryHelper.AddToInventory(p, item)) taken.Add(item);
                 else AddLog(c, "🎒 Инвентарь полон — часть добычи осталась.");
             }
@@ -2336,6 +2580,7 @@ public class RaidController : ControllerBase
             if (b.Looted) { obj.Looted = true; return (false, "Здесь уже всё обыскано.", new List<Item>()); }
             foreach (var item in b.Loot.ToList())
             {
+                item.FoundInRaid = true;
                 if (InventoryHelper.AddToInventory(p, item)) taken.Add(item);
                 else AddLog(c, "🎒 Инвентарь полон — часть добычи осталась.");
             }
@@ -2352,6 +2597,30 @@ public class RaidController : ControllerBase
         return (false, "Не удалось взаимодействовать.", new List<Item>());
     }
 
+    private void EnsureBossIntelDrop(Enemy enemy, string locationId)
+    {
+        string? code = (locationId ?? "").ToLowerInvariant() switch
+        {
+            "city" => "boss_pda_city",
+            "kordon" => "boss_flash_kordon",
+            "factory" => "boss_pda_factory",
+            "mall" => "boss_flash_mall",
+            "military" => "boss_pda_military",
+            "predbannik" => "boss_flash_predbannik",
+            "forest" => "boss_pda_forest",
+            "outskirts" => "boss_flash_outskirts",
+            "suburb" => "boss_pda_suburb",
+            "gradirni" => "boss_flash_gradirni",
+            _ => null,
+        };
+        if (code == null) return;
+        if (enemy.Loot.Any(i => string.Equals(i.Code, code, StringComparison.OrdinalIgnoreCase))) return;
+        var item = _catalog.Create(code);
+        if (item == null) return;
+        item.FoundInRaid = true;
+        enemy.Loot.Insert(0, item);
+    }
+
     private Enemy GenerateEnemy(Location loc, int t, bool isBoss = false)
     {
         double levelScale = 1.0 + Math.Max(0, _state.Player.Level - 1) * 0.045;
@@ -2361,9 +2630,11 @@ public class RaidController : ControllerBase
             int hp = (int)Math.Round((60 + t * 30 + _rng.Next(0, 20)) * levelScale);
             return new Enemy
             {
-                Name = "БОСС", Icon = "/enemies/boss.png", Hp = hp, MaxHp = hp,
-                Damage = Math.Max(1, (int)Math.Round((6 + t * 3) * levelScale)),
-                Defense = 1 + t, IsBoss = true, Ranged = t >= 4, Range = t >= 4 ? CombatRules.RangedRange : 1,
+                Name = string.IsNullOrWhiteSpace(loc.BossName) ? "БОСС" : loc.BossName,
+                Icon = string.IsNullOrWhiteSpace(loc.BossIcon) ? "/enemies/boss.png" : loc.BossIcon,
+                Hp = hp, MaxHp = hp,
+                Damage = Math.Max(8, (int)Math.Round((14 + t * 6) * levelScale)),
+                Defense = 2 + t, IsBoss = true, Ranged = t >= 4, Range = t >= 4 ? CombatRules.RangedRange : 1,
                 ApMax = 6, Ap = 6,
             };
         }
@@ -2379,7 +2650,7 @@ public class RaidController : ControllerBase
         foreach (var e in pool) { acc += e.Weight; if (roll <= acc) { chosen = e; break; } }
 
         int hpN = (int)Math.Round((chosen.BaseHp + (t - 1) * 10 + _rng.Next(0, 8)) * levelScale);
-        int dmg = Math.Max(1, (int)Math.Round((chosen.BaseDamage + (t - 1) * 2 + _rng.Next(0, 3)) * levelScale));
+        int dmg = Math.Max(2, (int)Math.Round((chosen.BaseDamage + (t - 1) * 3 + _rng.Next(0, 4)) * levelScale));
 
         // Используем иконку шаблона (важно для мутантов/типовых врагов), иначе случайная.
         string icon = !string.IsNullOrWhiteSpace(chosen.Icon)
@@ -2443,6 +2714,61 @@ public class RaidController : ControllerBase
                 return false;
         }
         return true;
+    }
+
+
+    private void PlaceWallShapes(CombatStateDto combat, int cw, int ch, int safeR, int tileBudget)
+    {
+        (int dx, int dy)[][] shapes = {
+            new[]{(0,0),(1,0)}, new[]{(0,0),(0,1)}, // ряд из 2
+            new[]{(0,0),(1,0),(0,1)}, new[]{(0,0),(1,0),(1,1)}, // уголки из 3
+            new[]{(0,0),(0,1),(1,1)}, new[]{(0,0),(0,1),(-1,1)},
+            new[]{(0,0),(1,0),(0,-1)}, new[]{(0,0),(-1,0),(0,1)},
+        };
+        int placed = 0;
+        for (int tries = 0; tries < Math.Max(200, tileBudget * 120) && placed < tileBudget; tries++)
+        {
+            var shape = shapes[_rng.Next(shapes.Length)];
+            int remaining = tileBudget - placed;
+            if (shape.Length > remaining)
+            {
+                if (remaining < 2) break;
+                shape = _rng.Next(2) == 0 ? new[] { (0, 0), (1, 0) } : new[] { (0, 0), (0, 1) };
+            }
+            int ax = _rng.Next(0, cw), ay = _rng.Next(0, ch);
+            bool ok = true;
+            foreach (var (dx, dy) in shape)
+            {
+                int x = ax + dx, y = ay + dy;
+                if (x < 0 || y < 0 || x >= cw || y >= ch) { ok = false; break; }
+                if (x == combat.PlayerX && y == combat.PlayerY) { ok = false; break; }
+                if (Math.Abs(x - combat.PlayerX) <= safeR && Math.Abs(y - combat.PlayerY) <= safeR) { ok = false; break; }
+                var t = GetCombatTile(combat, x, y);
+                if (t == null || t.Type != CombatTileTypes.Empty) { ok = false; break; }
+            }
+            if (!ok) continue;
+            foreach (var (dx, dy) in shape)
+                GetCombatTile(combat, ax + dx, ay + dy)!.Type = CombatTileTypes.Wall;
+            placed += shape.Length;
+        }
+    }
+
+    private void PlaceCoverSingles(CombatStateDto combat, int cw, int ch, int safeR, string type, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            for (int tries = 0; tries < 160; tries++)
+            {
+                int x = _rng.Next(0, cw);
+                int y = _rng.Next(0, ch);
+                if (x == combat.PlayerX && y == combat.PlayerY) continue;
+                if (Math.Abs(x - combat.PlayerX) <= safeR && Math.Abs(y - combat.PlayerY) <= safeR) continue;
+                var t = GetCombatTile(combat, x, y);
+                if (t == null || t.Type != CombatTileTypes.Empty) continue;
+                t.Type = type;
+                break;
+            }
+        }
     }
 
     private static double CoverReductionAt(CombatStateDto c, int x, int y, Player? p)
@@ -2521,6 +2847,16 @@ public class RaidController : ControllerBase
     // ============================================================
     //  УТИЛИТЫ
     // ============================================================
+
+    private static void ClearFoundInRaidStatus(Player p)
+    {
+        foreach (var i in p.Inventory)
+            i.FoundInRaid = false;
+
+        Item?[] equipped = { p.WeaponMelee, p.WeaponRanged, p.Helmet, p.Armor, p.Suit, p.Backpack };
+        foreach (var e in equipped)
+            if (e != null) e.FoundInRaid = false;
+    }
 
     private static int CountAmmo(Player p, string? caliber) =>
         p.Inventory.Where(i => i.Type == ItemType.Ammo

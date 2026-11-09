@@ -72,7 +72,6 @@ export default function Onboarding({ onDone }) {
                     e.currentTarget.style.display = "none";
                   }}
                 />
-                <span className="onboarding-avatar-name">{a.name}</span>
               </button>
             ))}
           </div>

@@ -4,7 +4,7 @@ import PlayerPanel from "./components/PlayerPanel";
 import Inventory from "./components/Inventory";
 import Traders from "./components/Traders";
 import Shelter from "./components/Shelter";
-import Quests from "./components/Quests";
+
 import MapTab from "./components/MapTab";
 import Settings from "./components/Settings";
 import AvatarPicker from "./components/AvatarPicker";
@@ -15,6 +15,8 @@ import Saves from "./components/Saves";
 import MainMenu from "./components/MainMenu";
 import StatsTab from "./components/StatsTab";
 import Perks from "./components/Perks";
+import BulletinBoard from "./components/BulletinBoard";
+import Diary from "./components/Diary";
 import { applyTheme, loadTheme } from "./components/Settings";
 import { audio } from "./audio";
 
@@ -26,6 +28,13 @@ export default function App() {
   const [invOpen, setInvOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [inRaid, setInRaid] = useState(false);
+
+  useEffect(() => {
+    if (player?.gameTimeMinutes != null) {
+      const m = ((player.gameTimeMinutes % 1440) + 1440) % 1440;
+      audio.setNight(m < 360 || m >= 1260);
+    }
+  }, [player?.gameTimeMinutes]);
   const [location, setLocation] = useState(null);
   const [toast, setToast] = useState("");
   const [endingSeen, setEndingSeen] = useState(() => {
@@ -178,9 +187,10 @@ export default function App() {
 
   const tabs = [
     ["map", "Карта"],
+    ["board", "📌 Доска объявлений"],
     ["traders", "Торговцы"],
     ["shelter", "Убежище"],
-    ["story", "Сюжет"],
+    ["story", "📓 Дневник"],
     ["perks", player.perkPoints > 0 ? `🧬 Навыки (${player.perkPoints})` : "🧬 Навыки"],
     ["stats", "📊 Статистика"],
     ["saves", "💾 Сохранения"],
@@ -243,9 +253,10 @@ export default function App() {
                 }}
               />
             )}
+            {tab === "board" && <BulletinBoard act={act} onToast={showToast} />}
             {tab === "traders" && <Traders player={player} act={act} />}
             {tab === "shelter" && <Shelter player={player} act={act} />}
-            {tab === "story" && <Quests story act={act} />}
+            {tab === "story" && <Diary act={act} />}
             {tab === "perks" && <Perks act={act} onToast={showToast} />}
             {tab === "stats" && <StatsTab player={player} act={act} onToast={showToast} />}
             {tab === "saves" && <Saves onToast={showToast} refreshPlayer={refresh} />}

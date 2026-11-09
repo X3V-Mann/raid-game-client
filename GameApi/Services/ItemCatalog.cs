@@ -59,14 +59,14 @@ public class ItemCatalog
         T("suit_sweater", "ССП-99 «Эколог»", ItemType.Armor, Rarity.Epic, 2400, def: 11, icon: MissingIcon, desc: "Научный комбинезон экологов. Отличная защита и мобильность.", isSuit: true, slowdown: 1, blastProtection: 24, bulletProtection: 22, physicalProtection: 30),
         T("suit_shirt", "ВКПО НАТО", ItemType.Armor, Rarity.Uncommon, 220, def: 3, icon: MissingIcon, desc: "Полевой комплект в расцветке НАТО.", isSuit: true, slowdown: 0, blastProtection: 5, bulletProtection: 4, physicalProtection: 8),
         T("suit_denim", "Куртка Новичка", ItemType.Armor, Rarity.Uncommon, 170, def: 2, icon: MissingIcon, desc: "Простая куртка сталкера-новичка. Немного защищает от царапин.", isSuit: true, slowdown: 0, blastProtection: 4, bulletProtection: 3, physicalProtection: 8),
-        T("suit_puffer", "Пуховик", ItemType.Armor, Rarity.Rare, 400, def: 5, icon: MissingIcon, desc: "Тёплый пуховик на синтепоне.", isSuit: true, slowdown: 1, blastProtection: 10, bulletProtection: 10, physicalProtection: 15),
+        T("suit_puffer", "Ватник", ItemType.Armor, Rarity.Rare, 400, def: 5, icon: "/items/clothing/ватник.png", desc: "Тёплый ватник.", isSuit: true, slowdown: 1, blastProtection: 10, bulletProtection: 10, physicalProtection: 15),
         T("suit_camo", "ВКПО ВС РФ", ItemType.Armor, Rarity.Rare, 600, def: 6, icon: MissingIcon, desc: "Всесезонный комплект полевого обмундирования ВС РФ.", isSuit: true, slowdown: 1, blastProtection: 12, bulletProtection: 12, physicalProtection: 18),
         T("suit_gilly", "Маскхалат", ItemType.Armor, Rarity.Epic, 1800, def: 8, icon: MissingIcon, desc: "Маскировочный халат для скрытного передвижения.", isSuit: true, slowdown: 2, blastProtection: 16, bulletProtection: 16, physicalProtection: 24),
         T("suit_seva", "Комбинезон СЕВА", ItemType.Armor, Rarity.Legendary, 5000, def: 15, icon: MissingIcon, desc: "Спецкомбинезон СЕВА с усиленной защитой.", isSuit: true, slowdown: 2, blastProtection: 30, bulletProtection: 30, physicalProtection: 45),
         T("suit_tactical", "Тактический комбинезон", ItemType.Armor, Rarity.Epic, 2500, def: 11, icon: MissingIcon, desc: "Тактический комбинезон с карманами.", isSuit: true, slowdown: 1, blastProtection: 22, bulletProtection: 22, physicalProtection: 33),
         T("suit_winter", "Зимний комбинезон", ItemType.Armor, Rarity.Rare, 700, def: 7, icon: MissingIcon, desc: "Утеплённый зимний комбинезон.", isSuit: true, slowdown: 1, blastProtection: 14, bulletProtection: 14, physicalProtection: 21),
         T("cloak_long", "Длинный плащ", ItemType.Armor, Rarity.Uncommon, 220, def: 4, icon: MissingIcon, desc: "Длинный плащ из плотной ткани. Лучше прикрывает тело, но чуть мешает.", isSuit: true, slowdown: 1, blastProtection: 7, bulletProtection: 5, physicalProtection: 12),
-        T("coat_trench", "Окопный плащ", ItemType.Armor, Rarity.Rare, 500, def: 5, icon: MissingIcon, desc: "Плотный окопный плащ. Защищает от непогоды и грязи.", isSuit: true, slowdown: 1, blastProtection: 10, bulletProtection: 10, physicalProtection: 15),
+
         T("suit_hoodie", "Зелёный свитер", ItemType.Armor, Rarity.Common, 80, def: 1, icon: MissingIcon, desc: "Простой зелёный свитер. Стартовая одежда выжившего.", isSuit: true, slowdown: 0, blastProtection: 2, bulletProtection: 2, physicalProtection: 3),
         T("suit_flannel", "Комбинезон наёмника", ItemType.Armor, Rarity.Rare, 850, def: 7, icon: MissingIcon, desc: "Практичный комбинезон наёмника с усиленными вставками.", isSuit: true, slowdown: 1, blastProtection: 14, bulletProtection: 14, physicalProtection: 20),
         T("suit_raincoat", "Дождевик", ItemType.Armor, Rarity.Uncommon, 150, def: 2, icon: MissingIcon, desc: "Водонепроницаемый дождевик.", isSuit: true, slowdown: 0, blastProtection: 4, bulletProtection: 4, physicalProtection: 6),
@@ -77,9 +77,9 @@ public class ItemCatalog
         T("vest_kevlar", "Кевларовый бронежилет", ItemType.Armor, Rarity.Rare, 1200, def: 8, icon: MissingIcon, desc: "Бронежилет из кевлара.", slowdown: 1, blastProtection: 16, bulletProtection: 32, physicalProtection: 19),
         T("vest_ceramic", "Лёгкий бронежилет", ItemType.Armor, Rarity.Epic, 2200, def: 12, icon: MissingIcon, desc: "Лёгкий бронежилет с защитными пластинами.", slowdown: 2, blastProtection: 24, bulletProtection: 44, physicalProtection: 27),
         T("vest_tactical", "Бронежилет прессы", ItemType.Armor, Rarity.Rare, 1500, def: 9, icon: MissingIcon, desc: "Бронежилет с маркировкой «PRESS».", slowdown: 1, blastProtection: 18, bulletProtection: 35, physicalProtection: 21),
-        T("vest_plate", "Пластинчатый жилет", ItemType.Armor, Rarity.Epic, 2800, def: 14, icon: MissingIcon, desc: "Жилет с массивными керамическими пластинами.", slowdown: 3, blastProtection: 36, bulletProtection: 60, physicalProtection: 31),
+
         T("vest_light", "Разгрузочный жилет \"Wassermann\"", ItemType.Armor, Rarity.Uncommon, 650, def: 2, slots: 10, icon: MissingIcon, desc: "Разгрузочный жилет. Добавляет +10 слотов инвентаря.", slowdown: 0, blastProtection: 4, bulletProtection: 8, physicalProtection: 6),
-        T("vest_military", "Военный бронежилет", ItemType.Armor, Rarity.Epic, 3000, def: 13, icon: MissingIcon, desc: "Армейский бронежилет усиленной защиты.", slowdown: 2, blastProtection: 26, bulletProtection: 47, physicalProtection: 29),
+        T("vest_military", "6Б43", ItemType.Armor, Rarity.Epic, 3000, def: 13, icon: "/items/clothing/bronezhilet-6b43-1.png", desc: "Армейский бронежилет 6Б43 усиленной защиты.", slowdown: 2, blastProtection: 26, bulletProtection: 47, physicalProtection: 29),
         T("vest_stalker", "Охотничий жилет", ItemType.Armor, Rarity.Rare, 720, def: 3, slots: 5, icon: MissingIcon, desc: "Охотничий жилет с карманами. Добавляет +5 слотов инвентаря.", slowdown: 0, blastProtection: 6, bulletProtection: 10, physicalProtection: 12),
         T("vest_police", "Полицейский бронежилет", ItemType.Armor, Rarity.Rare, 1050, def: 6, icon: MissingIcon, desc: "Полицейский бронежилет класса 2. Легче армейского, слабее от осколков.", slowdown: 1, blastProtection: 10, bulletProtection: 31, physicalProtection: 14),
         T("vest_bulletproof", "Бронежилет скрытого ношения", ItemType.Armor, Rarity.Legendary, 4500, def: 16, icon: MissingIcon, desc: "Скрытый бронежилет с высокой защитой.", slowdown: 1, blastProtection: 24, bulletProtection: 52, physicalProtection: 28),
@@ -96,7 +96,7 @@ public class ItemCatalog
         T("bag_milpack", "Армейский рюкзак", ItemType.Backpack, Rarity.Rare, 1600, slots: 42, icon: MissingIcon, desc: "Армейский рюкзак большой вместимости."),
         T("bag_huge", "Рюкзак штурмовой Mystery Ranch \"SATL Bridger Assault Pack\"", ItemType.Backpack, Rarity.Epic, 3200, slots: 55, icon: MissingIcon, desc: "Большой штурмовой рюкзак для длительных рейдов."),
         T("bag_duffel", "Спортивная сумка", ItemType.Backpack, Rarity.Uncommon, 360, slots: 32, icon: MissingIcon, desc: "Спортивная сумка. Вместительная, но менее удобная на спине."),
-        T("bag_field", "Сидор", ItemType.Backpack, Rarity.Rare, 1800, slots: 45, icon: MissingIcon, desc: "Большой походный рюкзак. В народе — «Сидор»."),
+        T("bag_field", "Походный рюкзак", ItemType.Backpack, Rarity.Rare, 1800, slots: 45, icon: MissingIcon, desc: "Большой походный рюкзак для долгих вылазок."),
         T("bag_med", "Медицинская сумка", ItemType.Backpack, Rarity.Uncommon, 380, slots: 26, icon: MissingIcon, desc: "Компактная сумка для медикаментов и инструментов. Меньше мест, но легче."),
         T("bag_assault", "Штурмовой рюкзак", ItemType.Backpack, Rarity.Rare, 1300, slots: 36, icon: MissingIcon, desc: "Штурмовой рюкзак для вылазок."),
         T("bag_cargo", "Рюкзак рейдовый 6Ш118", ItemType.Backpack, Rarity.Epic, 3000, slots: 55, icon: MissingIcon, desc: "Армейский рейдовый рюкзак 6Ш118. Огромная вместимость."),
@@ -117,6 +117,7 @@ public class ItemCatalog
 
         // === Вода / напитки ===
         T("water", "Вода", ItemType.Drink, Rarity.Common, 25, restore: 20, restores: "thirst", icon: "/items/food/water.png", desc: "Питьевая вода."),
+        T("mineral_water", "Минеральная вода", ItemType.Drink, Rarity.Common, 35, restore: 30, restores: "thirst", icon: "/items/food/Mineral_Water.png", desc: "Минеральная вода в бутылке."),
         T("cola", "Газировка", ItemType.Drink, Rarity.Uncommon, 55, restore: 40, restores: "thirst", icon: "/items/food/cola.png", desc: "Тёплая, но всё ещё вкусная."),
         T("energy", "Энергетик", ItemType.Drink, Rarity.Uncommon, 80, restore: 35, restores: "thirst", icon: "/items/food/energy.png", desc: "Химия и кофеин."),
         T("juice", "Сок", ItemType.Drink, Rarity.Common, 40, restore: 30, restores: "thirst", icon: "/items/food/juce.png", desc: "Вроде виноградный, а на упаковке яблоко."),
@@ -177,7 +178,7 @@ public class ItemCatalog
         T("salt", "Соль", ItemType.Material, Rarity.Common, 12, icon: MissingIcon, desc: "Пачка соли."),
         T("soda_pack", "Пачка соды", ItemType.Material, Rarity.Common, 15, icon: MissingIcon, desc: "Пищевая сода. Пригодится и в быту, и в химии."),
         T("gunpowder", "Порох", ItemType.Material, Rarity.Rare, 160, icon: MissingIcon, desc: "Небольшая ёмкость с порохом. Опасно."),
-        T("matches", "Спички", ItemType.Material, Rarity.Common, 10, icon: MissingIcon, desc: "Коробок спичек."),
+        T("matches", "Спички", ItemType.Material, Rarity.Common, 10, icon: "/items/resources/спички.png", desc: "Я 11 лет считаю спички у вас в коробках - их то 59, то 60, а иногда и 58. Вы там сумасшедшие что ли все?"),
         T("lighter", "Зажигалка", ItemType.Material, Rarity.Common, 25, icon: MissingIcon, desc: "Пластиковая зажигалка."),
         T("soap", "Кусок мыла", ItemType.Material, Rarity.Common, 12, icon: MissingIcon, desc: "Обычное хозяйственное мыло."),
         T("aramid_fabric", "Арамидная ткань", ItemType.Material, Rarity.Rare, 220, icon: MissingIcon, desc: "Прочная арамидная ткань для бронезащиты."),
@@ -192,13 +193,17 @@ public class ItemCatalog
         T("drill", "Дрель", ItemType.Material, Rarity.Rare, 240, icon: MissingIcon, desc: "Электрическая дрель."),
         T("hand_drill", "Ручная дрель", ItemType.Material, Rarity.Uncommon, 90, icon: MissingIcon, desc: "Ручная механическая дрель."),
         T("multitool", "Мультитул", ItemType.Material, Rarity.Uncommon, 120, icon: MissingIcon, desc: "Складной мультитул с набором инструментов."),
+        T("rosin", "Канифоль", ItemType.Material, Rarity.Uncommon, 35, icon: "/items/resources/Kanifol.png", desc: "Канифоль для пайки."),
+        T("capacitors", "Конденсаторы", ItemType.Material, Rarity.Uncommon, 60, icon: "/items/resources/Конденсаторы.png", desc: "Набор электронных конденсаторов."),
+        T("resistors", "Резисторы", ItemType.Material, Rarity.Uncommon, 45, icon: "/items/resources/Резисторы.png", desc: "Набор резисторов."),
+        T("textolite", "Текстолит", ItemType.Material, Rarity.Rare, 110, icon: "/items/resources/Текстолит.png", desc: "Лист текстолита для плат."),
 
         // === Ценности / бартер ===
         T("watch", "Наручные часы", ItemType.Misc, Rarity.Rare, 300, icon: "/items/other/watch.png", desc: "Механические наручные часы."),
         T("amber", "Янтарь", ItemType.Misc, Rarity.Rare, 500, icon: MissingIcon, desc: "Кусок янтаря."),
         T("goldchain", "Золотая цепь", ItemType.Misc, Rarity.Epic, 900, icon: "/items/other/goldchain.png", desc: "Тяжёлая цепь."),
         T("icon", "Икона", ItemType.Misc, Rarity.Epic, 700, icon: MissingIcon, desc: "Старая икона в окладе."),
-        T("artifact", "Артефакт «Капля»", ItemType.Misc, Rarity.Legendary, 5000, icon: "/items/other/artifact.png", desc: "Светится в темноте."),
+        T("artifact", "Артефакт «Капля»", ItemType.Misc, Rarity.Legendary, 5000, icon: "/items/Artifacts/Капля.png", desc: "Светится в темноте."),
         T("documents", "Документы", ItemType.Misc, Rarity.Rare, 1200, icon: MissingIcon, desc: "Папка с бумагами."),
         T("old_documents", "Старые документы", ItemType.Misc, Rarity.Uncommon, 180, icon: MissingIcon, desc: "Пожелтевшие документы. Кое-что ещё можно разобрать."),
         T("intel_folder", "Папка с разведданными", ItemType.Misc, Rarity.Epic, 1600, icon: MissingIcon, desc: "Папка с пометкой о разведданных."),
@@ -237,13 +242,49 @@ public class ItemCatalog
         T("phone", "Телефон", ItemType.Misc, Rarity.Uncommon, 220, icon: MissingIcon, desc: "Смартфон. Экран цел."),
         T("broken_phone", "Разбитый телефон", ItemType.Misc, Rarity.Common, 40, icon: MissingIcon, desc: "Телефон с разбитым экраном."),
 
+        // === Части мутантов (добыча с мутантов) ===
+        T("dog_tail", "Собачий хвост", ItemType.Material, Rarity.Common, 45, icon: "/items/animal_parts/Хвост собаки.png", desc: "Хвост мутировавшей собаки. Бармен требует части (кроме хвостов)."),
+        T("flesh_eye", "Глаз плоти", ItemType.Material, Rarity.Uncommon, 70, icon: "/items/animal_parts/Глаз плоти.png", desc: "Мутный глаз плоти."),
+        T("flesh_fat", "Сало плоти", ItemType.Material, Rarity.Common, 55, icon: "/items/animal_parts/Сало плоти.png", desc: "Жирный кусок сала плоти."),
+        T("boar_meat", "Мясо кабана", ItemType.Material, Rarity.Common, 60, icon: "/items/animal_parts/мясо кабана.png", desc: "Кусок мяса дикого кабана."),
+        T("boar_hoof", "Копыто кабана", ItemType.Material, Rarity.Uncommon, 50, icon: "/items/animal_parts/копыто кабана.png", desc: "Твёрдое копыто кабана."),
+
+        // === Квестовые предметы / скриптовые ===
+        T("quest_lost_cargo", "Утерянный груз", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Стальной_Ящик.png", desc: "Ценный груз, который нужно было доставить клиенту.", lootable: false),
+        T("quest_factory_docs", "Документы с завода", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Документация.png", desc: "Правительственные документы о секретной разработке.", lootable: false),
+        T("quest_merc_flash", "Флешка наёмников", ItemType.Misc, Rarity.Rare, 0, icon: "/task/Пренести_Флешку.png", desc: "Данные группы наёмников.", lootable: false),
+        T("quest_bunker_key", "Ключ от бункера", ItemType.Misc, Rarity.Epic, 0, icon: "/items/other/ключ.png", desc: "Ключ к объекту на Градирнях.", lootable: false),
+        T("quest_notes", "Записи выжившего", ItemType.Misc, Rarity.Uncommon, 0, icon: "/items/script_items/записка.png", desc: "Обрывки записей о том, что произошло.", lootable: false),
+        T("q_closed_case", "Закрытый кейс", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Закрытый_Кейс.png", desc: "Запертый кейс. Содержимое неизвестно.", lootable: false),
+        T("q_steel_box", "Стальной ящик", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Стальной_Ящик.png", desc: "Тяжёлый стальной ящик с грузом.", lootable: false),
+        T("q_artifact_case", "Кейс с артефактами", ItemType.Misc, Rarity.Epic, 0, icon: "/items/script_items/Кейс_с_артефактами.png", desc: "Защитный контейнер с артефактами.", lootable: false),
+        T("q_docs_folder", "Папка с документами", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Документы.png", desc: "Папка с важными документами.", lootable: false),
+        T("q_tech_docs", "Техническая документация (секретная)", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/Техническая_Документация.png", desc: "Секретные технические схемы.", lootable: false),
+        T("q_intel_folder", "Разведданные", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/папка_с_разведданными.png", desc: "Папка с разведывательными данными.", lootable: false),
+        T("q_old_docs", "Старые бумаги", ItemType.Misc, Rarity.Uncommon, 0, icon: "/items/script_items/старые_документы.png", desc: "Старые, но важные бумаги.", lootable: false),
+        T("q_note", "Записка", ItemType.Misc, Rarity.Uncommon, 0, icon: "/items/script_items/записка.png", desc: "Короткая записка.", lootable: false),
+        T("art_kaplya", "Артефакт «Капля» (контейнер)", ItemType.Misc, Rarity.Legendary, 0, icon: "/items/Artifacts/Капля.png", desc: "Редкий артефакт в защитной упаковке.", lootable: false),
+        T("atomic_bomb", "Ядерный заряд (объект)", ItemType.Misc, Rarity.Legendary, 0, icon: "/blocks/atomic_bomb_for_final.png", desc: "Финальное устройство. Используется в сюжете.", lootable: false),
+
+        // === Добыча с боссов (сюжет) ===
+        T("boss_pda_city", "КПК Шрама", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/PDA.png", desc: "КПК главаря дворов Шрама. На нём — записи о поставках и контактах.", lootable: false),
+        T("boss_flash_kordon", "Флешка Валета", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/флешка1.png", desc: "Зашифрованная флешка смотрящего Кордона. Кто-то очень хочет её получить.", lootable: false),
+        T("boss_pda_factory", "КПК Цеховика", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/PDA.png", desc: "КПК бригадира наёмников Цеховика. Данные о грузе и маршрутах.", lootable: false),
+        T("boss_flash_mall", "Флешка Кассира", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/флешка2.png", desc: "Флешка лидера мародёров. Списки тайников и схема связей.", lootable: false),
+        T("boss_pda_military", "КПК полковника Громова", ItemType.Misc, Rarity.Epic, 0, icon: "/items/script_items/PDA.png", desc: "Защищённый КПК полковника. Военные коды и отметки об объекте.", lootable: false),
+        T("boss_flash_predbannik", "Флешка Привратника", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/флешка3.png", desc: "Флешка Привратника с пропусками и журналом доступа.", lootable: false),
+        T("boss_pda_forest", "КПК Лешего", ItemType.Misc, Rarity.Rare, 0, icon: "/items/script_items/PDA.png", desc: "Странный КПК, найденный у альфа-мутанта. Кто-то потерял его в лесу...", lootable: false),
+        T("boss_flash_outskirts", "Флешка Ворона", ItemType.Misc, Rarity.Epic, 0, icon: "/items/script_items/флешка1.png", desc: "Флешка командира патруля. На ней — отчёты об охране периметра.", lootable: false),
+        T("boss_pda_suburb", "КПК Палача", ItemType.Misc, Rarity.Epic, 0, icon: "/items/script_items/PDA.png", desc: "КПК командира ЧВК. Приказы, координаты и зашифрованные сообщения.", lootable: false),
+        T("boss_flash_gradirni", "Флешка Куратора", ItemType.Misc, Rarity.Legendary, 0, icon: "/items/script_items/флешка2.png", desc: "Флешка главы охраны Градирней. Ключ к последним тайнам объекта.", lootable: false),
+
         // === Кассеты ===
         T("cassette_1", "Кассета «Good Ending»", ItemType.Cassette, Rarity.Rare, 300, icon: "/items/other/cassette.gif", desc: "Плёнка с тёплой мелодией.", lootable: false),
         T("cassette_2", "Кассета «Dirge for the Planet»", ItemType.Cassette, Rarity.Rare, 300, icon: "/items/other/cassette.gif", desc: "Тяжёлая, тянущаяся запись.", lootable: false),
         T("cassette_3", "Кассета «Desolated»", ItemType.Cassette, Rarity.Rare, 300, icon: "/items/other/cassette.gif", desc: "Гул в тишине.", lootable: false),
 
         // === Граната ===
-        T("grenade", "Граната РГД-5", ItemType.Misc, Rarity.Common, 150, dmg: 40, icon: MissingIcon, desc: "Осколочная граната РГД-5.", lootable: true, isGrenade: true),
+        T("grenade", "Граната РГД-5", ItemType.Misc, Rarity.Common, 150, dmg: 40, icon: "/items/weapon/РГД-5.png", desc: "Осколочная граната РГД-5.", lootable: false, isGrenade: true),
 
         // === Тайник (редкий объект в зданиях) ===
         T("stash_box", "Тайник", ItemType.Stash, Rarity.Rare, 0, icon: "/blocks/stash.png", desc: "Скрытный тайник. Можно обыскать, чтобы найти лут.", isStash: true, lootable: false),
@@ -258,7 +299,138 @@ public class ItemCatalog
         ["bag_large"] = "/items/clothing/bag_large.png", ["bag_expedition"] = "/items/clothing/bag_expedition.png",
         ["energy"] = "/items/food/energy.png", ["stew"] = "/items/food/stew.png",
         ["painkiller"] = "/items/medicine/painkiller.png", ["antirad"] = "/items/medicine/antirad.png",
+        ["cement"] = "/items/resources/cement.png", ["glass"] = "/items/resources/Glass.png",
+        ["rubber"] = "/items/resources/Rubber.png", ["fuel"] = "/items/resources/топливо.png",
+        ["kerosene"] = "/items/resources/Керосин.png", ["propane"] = "/items/resources/Пропан.png",
+        ["sparkplug"] = "/items/resources/свеча_зажигания.png", ["nails"] = "/items/resources/гвозди.png",
+        ["zipties"] = "/items/resources/Стяжки.png", ["electronics"] = "/items/resources/микросхема.png",
+        ["toolkit"] = "/items/resources/набор инструментов.png", ["duct_tape"] = "/items/resources/duct_tape.png",
+        ["amber"] = "/items/other/янтарь.png", ["icon"] = "/items/other/Икона.png",
+        ["documents"] = "/items/other/Документы.png", ["coffee"] = "/items/other/кофе.png",
+        ["cigarettes"] = "/items/other/sigarettes.png", ["chocolate"] = "/items/other/шоколад.png",
+        ["dogtags"] = "/items/other/dogtag.png", ["medal"] = "/items/other/Medal.png",
+        ["cards"] = "/items/other/cards.png", ["harmonica"] = "/items/other/harmonica.png",
+        ["compass"] = "/items/other/compass.png", ["binoculars"] = "/items/other/binoculars.png",
+        ["camera"] = "/items/other/photoapparat.png", ["radio_parts"] = "/items/other/радиодетали.png",
+        ["geiger_counter"] = "/items/other/geiger.png",
+
+        // Костюмы
+        ["suit_leather_coat"] = "/items/clothing/Монолит.png",
+        ["suit_sweater"] = "/items/clothing/СПП-99.png",
+        ["suit_shirt"] = "/items/clothing/ВКПО_НАТО.png",
+        ["suit_denim"] = "/items/clothing/Куртка_Новичка.png",
+        ["suit_camo"] = "/items/clothing/ВКПО_ВС_РФ.png",
+        ["suit_gilly"] = "/items/clothing/Маскхалат.png",
+        ["suit_seva"] = "/items/clothing/СЕВА.png",
+        ["suit_tactical"] = "/items/clothing/Тактический_комбинезон.png",
+        ["suit_winter"] = "/items/clothing/Зимний_комбинезон.png",
+        ["cloak_long"] = "/items/clothing/Длинный плащ.png",
+        ["suit_hoodie"] = "/items/clothing/Злёный свитер.png",
+        ["suit_flannel"] = "/items/clothing/Комбинезон_наёмника.png",
+        ["suit_raincoat"] = "/items/clothing/Дождевик.png",
+        ["suit_vest"] = "/items/clothing/Армейский_бронекостюм.png",
+        ["suit_armor"] = "/items/clothing/Заря.png",
+
+        // Бронежилеты / разгрузки
+        ["vest_kevlar"] = "/items/clothing/кевларовый_бронежилет.png",
+        ["vest_ceramic"] = "/items/clothing/лёгкий бронежилет.png",
+        ["vest_tactical"] = "/items/clothing/Бронежилет_прессы.png",
+        ["vest_light"] = "/items/clothing/Разгрузочный жилет Wassermann.png",
+        ["vest_stalker"] = "/items/clothing/Охотничий_Жилет.png",
+        ["vest_police"] = "/items/clothing/полицейский_бронежилет.png",
+        ["vest_bulletproof"] = "/items/clothing/Бронежилет скрытого ношения.png",
+        ["vest_steel"] = "/items/clothing/Бронежилет_6Б2.png",
+        ["vest_6b13"] = "/items/clothing/Бронежилет_штурмовой_6Б13.png",
+        ["vest_korund"] = "/items/clothing/Корунд-ВМ.png",
+        ["rig_commando"] = "/items/clothing/Commando.png",
+
+        // Рюкзаки
+        ["bag_briefcase"] = "/items/clothing/Школьный рюкзак.png",
+        ["bag_sack"] = "/items/clothing/VKBO.png",
+        ["bag_daypack"] = "/items/clothing/городской_рюкзак.png",
+        ["bag_tactpack"] = "/items/clothing/Тактический рюкзак.png",
+        ["bag_milpack"] = "/items/clothing/армейский рюкзак.png",
+        ["bag_huge"] = "/items/clothing/SATL Bridger Assault Pack.png",
+        ["bag_duffel"] = "/items/clothing/Спортивная_сумка.png",
+        ["bag_field"] = "/items/clothing/Походный рюкзак.png",
+        ["bag_med"] = "/items/clothing/медицинская_сумка.png",
+        ["bag_assault"] = "/items/clothing/штурмовой рюкзак.png",
+        ["bag_cargo"] = "/items/clothing/6Ш118.png",
+
+        // Медицина
+        ["hydrogen_peroxide"] = "/items/resources/Перикись_водорода.png",
+        ["syringe_sealed"] = "/items/resources/Шприц в упаковке.png",
+
+        // Материалы
+        ["glass"] = "/items/resources/Glass.png",
         ["cement"] = "/items/resources/cement.png",
+        ["rubber"] = "/items/resources/Rubber.png",
+        ["fuel"] = "/items/resources/топливо.png",
+        ["electronics"] = "/items/resources/микросхема.png",
+        ["toolkit"] = "/items/resources/набор инструментов.png",
+        ["nails"] = "/items/resources/гвозди.png",
+        ["duct_tape"] = "/items/resources/duct_tape.png",
+        ["zipties"] = "/items/resources/Стяжки.png",
+        ["kerosene"] = "/items/resources/Керосин.png",
+        ["propane"] = "/items/resources/Пропан.png",
+        ["sparkplug"] = "/items/resources/свеча_зажигания.png",
+        ["rosin"] = "/items/resources/Kanifol.png",
+        ["capacitors"] = "/items/resources/Конденсаторы.png",
+        ["resistors"] = "/items/resources/Резисторы.png",
+        ["textolite"] = "/items/resources/Текстолит.png",
+        ["battery_aa"] = "/items/resources/батарейка.png",
+        ["fuel_can_5"] = "/items/resources/канистра5л.png",
+        ["fuel_can_10"] = "/items/resources/канистра10л.png",
+        ["screwdriver_set"] = "/items/resources/Набор_отвёрток.png",
+        ["awl"] = "/items/resources/шило.png",
+        ["bolts"] = "/items/resources/болт.png",
+        ["nuts"] = "/items/resources/гайка.png",
+        ["paracord"] = "/items/resources/Паракорд.png",
+        ["salt"] = "/items/resources/соль.png",
+        ["soda_pack"] = "/items/resources/пачка соды.png",
+        ["gunpowder"] = "/items/resources/порох.png",
+        ["lighter"] = "/items/resources/зажигалка.png",
+        ["soap"] = "/items/resources/мыло.png",
+        ["aramid_fabric"] = "/items/resources/арамидная.png",
+        ["ripstop_fabric"] = "/items/resources/рипстоп.png",
+        ["fleece_fabric"] = "/items/resources/флис.png",
+        ["cordura_fabric"] = "/items/resources/Кордура.png",
+        ["relay"] = "/items/resources/реле.png",
+        ["ram"] = "/items/resources/оперативная_память.png",
+        ["psu"] = "/items/resources/блок_питания.png",
+        ["pliers"] = "/items/resources/плоскогубцы.png",
+        ["round_pliers"] = "/items/resources/круглогубцы.png",
+        ["drill"] = "/items/resources/дрель.png",
+        ["hand_drill"] = "/items/resources/ручная_дрель.png",
+        ["multitool"] = "/items/resources/мультитул.png",
+
+        // Разное / ценности
+        ["documents"] = "/items/other/Документы.png",
+        ["meds_kit_pack"] = "/items/other/Набор_медикаментов.png",
+        ["old_documents"] = "/items/other/старые_документы.png",
+        ["intel_folder"] = "/items/other/папка_с_разведданными.png",
+        ["tech_docs"] = "/items/other/Техническая_Документация.png",
+        ["paper_pack"] = "/items/other/пачка_бумаги.png",
+        ["old_money"] = "/items/other/старые_деньги.png",
+        ["tea_box"] = "/items/other/чай.png",
+        ["guitar"] = "/items/other/гитара.png",
+        ["keys"] = "/items/other/ключ.png",
+        ["car_key"] = "/items/other/Авто_ключ.png",
+        ["earrings"] = "/items/other/серьги.png",
+        ["ring"] = "/items/other/кольцо.png",
+        ["necklace"] = "/items/other/ожерелье.png",
+        ["candlestick"] = "/items/other/подсвечник.png",
+        ["gold_bar"] = "/items/other/золотой слиток.png",
+        ["faberge_replica"] = "/items/other/яйцо фаберже.png",
+        ["bear_statuette"] = "/items/other/статуэтка медведя.png",
+        ["eagle_statuette"] = "/items/other/статуэтка орла.png",
+        ["skull_ring"] = "/items/other/кольцо с черепом.png",
+        ["hdd"] = "/items/other/жёсткий диск.png",
+        ["cd_disk"] = "/items/other/cd_диск.png",
+        ["book"] = "/items/other/потрёпанная книга.png",
+        ["powerbank"] = "/items/other/повербанк.png",
+        ["phone"] = "/items/other/телефон.png",
+        ["broken_phone"] = "/items/other/разбитый_телефон.png",
     };
 
     private static readonly Dictionary<string, string> AmmoIconOverrides = new()
@@ -271,6 +443,7 @@ public class ItemCatalog
         ["12.7x55mm"] = "/ammo/12,7x55.png",
         ["4.6x30mm"] = "/ammo/4.6x30.png",
         ["5.45x39mm"] = "/ammo/5.45x39.png",
+        ["5.8x42mm"] = "/ammo/58x42mm-dvp88.png",
         ["5.56x45mm NATO"] = "/ammo/5.56x45.png",
         ["5.7x28mm"] = "/ammo/5.7x28.png",
         ["7.62x25mm"] = "/ammo/7.62x25.png",
@@ -358,14 +531,14 @@ public class ItemCatalog
 
     public Item Add(Item item) { _templates.Add(item); return item; }
 
-    /// <summary>Получить или создать боеприпас по калибру. Один шаблон на калибр.</summary>
+    /// <summary>Получить или создать боеприпас по калибру. Один шаблон на калибр; возвращает новый экземпляр.</summary>
     public Item CreateAmmo(string caliber, double weight, int price, string desc)
     {
         var existing = _templates.FirstOrDefault(t => t.Type == ItemType.Ammo && t.Caliber == caliber);
         if (existing != null)
         {
             if (AmmoIconOverrides.TryGetValue(caliber, out var existingIcon)) existing.Icon = existingIcon;
-            return existing;
+            return Create(existing.Code);
         }
 
         int damage = AmmoDamageHint(caliber);
@@ -385,7 +558,7 @@ public class ItemCatalog
             LootTier = WeaponCatalog.LootTierForDamage(damage),
         };
         _templates.Add(item);
-        return item;
+        return Create(item.Code);
     }
 
     /// <summary>Ориентировочный урон оружия под калибр — чтобы задать тир лута.</summary>

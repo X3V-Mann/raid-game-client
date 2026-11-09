@@ -68,6 +68,8 @@ public class RaidState
     public List<RaidCar> Cars { get; set; } = new();
     /// <summary>Мутанты на карте локации. Внутри зданий они не спаунятся.</summary>
     public List<RaidMutant> Mutants { get; set; } = new();
+    /// <summary>Нейтральные/скриптовые NPC на карте.</summary>
+    public List<RaidNpc> Npcs { get; set; } = new();
     public int PlayerX { get; set; }
     public int PlayerY { get; set; }
     public int ExitX { get; set; }
@@ -180,6 +182,24 @@ public class RaidMutant
     public int Cooldown { get; set; }
 }
 
+/// <summary>Нейтральный/дружественный/скриптовый NPC на карте рейда.</summary>
+public class RaidNpc
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Name { get; set; } = "";
+    public string Icon { get; set; } = ""; // /neutrals_frendly/...
+    public int X { get; set; }
+    public int Y { get; set; }
+    public bool Scripted { get; set; }
+    public string? GivesItemCode { get; set; } // выдаёт при разговоре (если квест активен)
+    public string? RequiresQuestId { get; set; } // только если этот квест принят
+    public bool GaveItem { get; set; }
+    public bool Talked { get; set; }
+    public List<string> Dialogue { get; set; } = new();
+    public bool CanTrade { get; set; }
+    public List<string> TradeCodes { get; set; } = new(); // коды товаров (покупка за деньги)
+}
+
 // ============================================================
 //  ТАКТИЧЕСКИЙ БОЙ (8 × 8)
 // ============================================================
@@ -237,6 +257,8 @@ public class CombatStateDto
     public bool PlayerWon { get; set; }
     public bool PlayerFled { get; set; }
     public string? LastEvent { get; set; }
+    /// <summary>Id противника, который последним атаковал игрока (для подсветки в UI).</summary>
+    public string? LastAttackerId { get; set; }
 
     /// <summary>Есть ли на поле трупы, которые ещё можно обыскать.</summary>
     public bool CorpsesAvailable => Enemies.Any(e => e.Hp <= 0 && !e.Looted && (e.Loot.Count > 0 || e.Money > 0));

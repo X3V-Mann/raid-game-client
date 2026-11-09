@@ -66,4 +66,7 @@ public class Item
 
     /// <summary>Тайник — редкий объект в зданиях, можно обыскать.</summary>
     public bool IsStash { get; set; }
+
+    /// <summary>Предмет вынесен из рейда — только такие можно сдавать торговцам.</summary>
+    public bool FoundInRaid { get; set; }
 }

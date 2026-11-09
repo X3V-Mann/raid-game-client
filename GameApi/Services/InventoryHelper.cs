@@ -16,7 +16,8 @@ public static class InventoryHelper
     {
         if (IsStackable(item))
         {
-            var existing = p.Inventory.FirstOrDefault(i => i.Code == item.Code);
+            // Не смешиваем «рейдовое» и «не рейдовое» в один стак — иначе теряется метка «из рейда».
+            var existing = p.Inventory.FirstOrDefault(i => i.Code == item.Code && i.FoundInRaid == item.FoundInRaid);
             if (existing != null)
             {
                 existing.Count += item.Count;
@@ -92,4 +93,23 @@ public static class InventoryHelper
 
     public static int CountByCode(Player p, string code)
         => p.Inventory.Where(i => i.Code == code).Sum(i => i.Count);
+
+    public static int CountByCodeFromRaid(Player p, string code)
+        => p.Inventory.Where(i => i.Code == code && i.FoundInRaid).Sum(i => i.Count);
+
+    public static int RemoveAllByCodeFromRaid(Player p, string code, int maxCount = int.MaxValue)
+    {
+        int removed = 0;
+        var toRemove = new List<Item>();
+        foreach (var item in p.Inventory.Where(i => i.Code == code && i.FoundInRaid))
+        {
+            if (removed >= maxCount) break;
+            int take = Math.Min(item.Count, maxCount - removed);
+            item.Count -= take;
+            removed += take;
+            if (item.Count <= 0) toRemove.Add(item);
+        }
+        foreach (var i in toRemove) p.Inventory.Remove(i);
+        return removed;
+    }
 }

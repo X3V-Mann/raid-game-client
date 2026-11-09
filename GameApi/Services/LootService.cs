@@ -66,6 +66,8 @@ public class LootService
             }
         }
 
+        foreach (var it in finalItems) it.FoundInRaid = true;
+
         var result = new LootResult
         {
             Items = finalItems,
@@ -99,6 +101,8 @@ public class LootService
     public Item? RollCassette()
     {
         if (_rng.NextDouble() > 0.05) return null;
-        return _catalog.Create(CassetteCodes[_rng.Next(CassetteCodes.Length)]);
+        var c = _catalog.Create(CassetteCodes[_rng.Next(CassetteCodes.Length)]);
+        c.FoundInRaid = true;
+        return c;
     }
 }

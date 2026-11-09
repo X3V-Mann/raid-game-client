@@ -101,6 +101,20 @@ public class Player
     /// <summary>Открытые достижения (id).</summary>
     public List<string> Achievements { get; set; } = new();
 
+    /// <summary>Разблокированные торговцы (прогрессия сюжета). В начале доступны скупщик и бармен.</summary>
+    public List<string> UnlockedTraders { get; set; } = new() { "buyer", "bartender" };
+
+    /// <summary>Игровое время в минутах от старта (День 1, 08:00 = 480).</summary>
+    public long GameTimeMinutes { get; set; } = 480;
+
+    /// <summary>Мысли/записи для личного дневника.</summary>
+    public List<string> JournalThoughts { get; set; } = new();
+
+    /// <summary>Финальный выбор: detonated/hidden/null.</summary>
+    public string? EndingChoice { get; set; }
+    /// <summary>Бомба спрятана в убежище/локации (спрайт доступен при hidden).</summary>
+    public bool BombHidden { get; set; }
+
     // Статистика
     public PlayerStats Stats { get; set; } = new();
 

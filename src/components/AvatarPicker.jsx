@@ -26,7 +26,6 @@ export default function AvatarPicker({ current, onSelect, onClose }) {
               <span className="avatar-fallback" style={{ display: "none" }}>
                 {a.name[0]}
               </span>
-              <span className="avatar-name">{a.name}</span>
             </button>
           ))}
         </div>

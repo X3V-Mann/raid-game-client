@@ -25,6 +25,15 @@ public class Trader
     public int LoyaltyRep { get; set; }
     public int LoyaltyCurrent { get; set; }
     public int LoyaltyNext { get; set; }
+    public bool IsUnlocked { get; set; } = true;
+    public List<DialogueLine> Dialogue { get; set; } = new(); // заглушка/контент диалога
+}
+
+public class DialogueLine
+{
+    public string Speaker { get; set; } = "";
+    public string Text { get; set; } = "";
+    public string? GivesQuestId { get; set; }
 }
 
 public class ItemStack

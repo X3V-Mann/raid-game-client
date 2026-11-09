@@ -23,6 +23,48 @@ public class GameStateService
     public List<Trader> Traders { get; }
     public List<Quest> Quests { get; }
     public List<Quest> StoryQuests { get; }
+    public List<Quest> SideQuests { get; } = new();
+
+    /// <summary>Сколько игровых минут добавляется за один пассивный тик (5 сек реального времени).</summary>
+    public const int GameMinutesPerTick = 5;
+
+    public static bool IsNight(long totalMinutes)
+    {
+        int m = (int)(totalMinutes % 1440);
+        return m < 360 || m >= 1260; // 00:00-05:59, 21:00-23:59
+    }
+
+    public object GetGameTimeInfo()
+    {
+        long t = Player.GameTimeMinutes;
+        int day = (int)(t / 1440) + 1;
+        int mins = (int)(t % 1440);
+        int h = mins / 60, m = mins % 60;
+        bool night = IsNight(t);
+        return new { day, hour = h, minute = m, totalMinutes = t, isNight = night, text = $"День {day}, {h:00}:{m:00}" };
+    }
+
+    public void AdvanceGameTime(int minutes)
+    {
+        if (minutes <= 0) return;
+        Player.GameTimeMinutes += minutes;
+        ExpireUrgentQuests();
+    }
+
+    public void ExpireUrgentQuests()
+    {
+        foreach (var q in AllQuests().Where(q => q.IsUrgent && q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.DeadlineGameMinutes > 0))
+        {
+            if (Player.GameTimeMinutes > q.DeadlineGameMinutes)
+            {
+                q.IsFailed = true;
+                q.IsAccepted = false;
+                q.Progress = 0;
+            }
+        }
+    }
+
+    public IEnumerable<Quest> AllQuests() => Quests.Concat(StoryQuests).Concat(SideQuests);
 
     public GameStateService(ItemCatalog catalog, QuestService quests, WeaponCatalog weapons)
     {
@@ -36,9 +78,9 @@ public class GameStateService
             Inventory = new() { catalog.Create("knife") },
         };
 
-        // Регистрируем оружие из Data/weapon_list.json (только секция "weapons").
+        // Регистрируем оружие из Data/weapon_list.json (weapons + traderWeapons).
         var seenCodes = new HashSet<string>();
-        foreach (var w in WeaponCatalog.All)
+        foreach (var w in WeaponCatalog.All.Concat(WeaponCatalog.TraderWeapons))
         {
             if (string.Equals(w.WeaponClass, "Grenade", StringComparison.OrdinalIgnoreCase)) continue;
             var item = WeaponCatalog.CreateItem(w);
@@ -46,7 +88,7 @@ public class GameStateService
         }
 
         // Один шаблон патрона на каждый уникальный калибр.
-        foreach (var caliber in WeaponCatalog.All
+        foreach (var caliber in WeaponCatalog.All.Concat(WeaponCatalog.TraderWeapons)
                      .Where(w => !string.IsNullOrWhiteSpace(w.Caliber)
                                  && !string.Equals(w.WeaponClass, "Grenade", StringComparison.OrdinalIgnoreCase))
                      .Select(w => w.Caliber!)
@@ -74,8 +116,9 @@ public class GameStateService
 
         ItemStack Need(string code, int count) => new() { Code = code, Count = count };
 
-        // Все стволы из JSON (кроме гранат), отсортированные по требуемой лояльности.
+        // Все стволы из JSON (кроме гранат), включая traderWeapons, отсортированные по требуемой лояльности.
         var weaponStock = WeaponCatalog.All
+            .Concat(WeaponCatalog.TraderWeapons)
             .Where(w => !string.Equals(w.WeaponClass, "Grenade", StringComparison.OrdinalIgnoreCase))
             .Select(WeaponCatalog.CreateItem)
             .OrderBy(i => i.RequiredLoyalty)
@@ -93,6 +136,7 @@ public class GameStateService
             {
                 Id = "prapor", Name = "Прапор", Description = "Оружие на любой вкус.",
                 Image = "/traders/prapor.png",
+                Dialogue = new(){ new(){Speaker="Прапор",Text="Оружие есть. Вопросы — после дела."}, new(){Speaker="Прапор",Text="На Заводе засели серьёзные люди. Без подготовки не суйся."}, new(){Speaker="Прапор",Text="Принеси то, что нужно, — и получишь доступ к лучшему стволу."} },
                 // Прапор — оружейный магазин: его стволы должны стоять в ценах melee 300–1000 / огнестрел 1100+,
                 // поэтому базовую стоимость оружия у него смещаем ниже (снаряжение у «Старьёвщика» дороже — ×1.6 в ItemCatalog).
                 Buys = new() { ItemType.WeaponMelee, ItemType.WeaponRanged, ItemType.Ammo },
@@ -113,6 +157,7 @@ public class GameStateService
             {
                 Id = "therapist", Name = "Сергей", Description = "Только медицина: перевязка, лекарства и аптечки.",
                 Image = "/traders/therapist.png",
+                Dialogue = new(){ new(){Speaker="Сергей",Text="Покажи раны. И без героизма."}, new(){Speaker="Сергей",Text="После рейда — сначала ко мне, потом к Бармену."}, new(){Speaker="Сергей",Text="Части мутантов опасны, но в умелых руках — источник данных и товара."} },
                 Buys = new() { ItemType.Medicine }, BuyRate = 0.5,
                 Stock = Stock("bandage", "bandage_sterile", "bandage_pack", "iodine", "vaseline",
                               "painkiller", "painkiller_strong", "morphine", "hemostatic", "saline",
@@ -131,6 +176,7 @@ public class GameStateService
             {
                 Id = "bartender", Name = "Бармен", Description = "Еда, напитки и тёплый уголок.",
                 Image = "/traders/barman.png",
+                Dialogue = new(){ new(){Speaker="Бармен",Text="Снова ты. Садись, рассказывай."}, new(){Speaker="Бармен",Text="Я помню тебя — и помню, что за тобой шли. Груз был непростой."}, new(){Speaker="Бармен",Text="Хочешь правду? Сначала помоги Зоне помочь тебе. Части мутантов, слухи, документы — всё в дело."} },
                 Buys = new() { ItemType.Food, ItemType.Drink }, BuyRate = 0.5,
                 Stock = Stock("bread", "canned", "stew", "sausage", "cheese", "crackers", "noodles",
                               "canned_fish", "honey", "mre", "sandwich", "mint_candy",
@@ -147,6 +193,7 @@ public class GameStateService
             {
                 Id = "ragman", Name = "Сидорович", Description = "Экипировка и рюкзаки.",
                 Image = "/traders/ragman.png",
+                Dialogue = new(){ new(){Speaker="Сидорович",Text="Одежда, броня, рюкзаки — выбирай, пока жив."}, new(){Speaker="Сидорович",Text="Хороший костюм не спасёт от глупости, но от пули — иногда да."} },
                 Buys = new() { ItemType.Helmet, ItemType.Armor, ItemType.Backpack }, BuyRate = 0.5,
                 Stock = Stock("cap", "helmet_ssh", "helmet_tactical", "helmet_altyn", "helmet_exo",
                               "jacket", "cloak", "vest", "combat_suit", "vest_heavy", "sphere", "exo",
@@ -157,10 +204,10 @@ public class GameStateService
                               // Новые костюмы и одежда (слот костюма)
                               "suit_leather_coat", "suit_sweater", "suit_shirt", "suit_denim", "suit_puffer",
                               "suit_camo", "suit_gilly", "suit_seva", "suit_tactical", "suit_winter",
-                              "cloak_long", "coat_trench", "suit_hoodie", "suit_flannel", "suit_raincoat",
+                              "cloak_long", "suit_hoodie", "suit_flannel", "suit_raincoat",
                               "suit_vest", "suit_armor",
                               // Новые бронежилеты/разгрузки (слот брони)
-                              "vest_kevlar", "vest_ceramic", "vest_tactical", "vest_plate", "vest_light",
+                              "vest_kevlar", "vest_ceramic", "vest_tactical", "vest_light",
                               "vest_military", "vest_stalker", "vest_police", "vest_bulletproof", "vest_steel",
                               "vest_6b13", "vest_korund", "rig_commando",
                               // Новые рюкзаки
@@ -177,6 +224,7 @@ public class GameStateService
             {
                 Id = "blacksmith", Name = "Кузнец", Description = "Броня и материалы.",
                 Image = "/traders/blacksmith.png",
+                Dialogue = new(){ new(){Speaker="Кузнец",Text="Принеси металл — сделаю, что смогу."}, new(){Speaker="Кузнец",Text="Электроника, пайка, инструмент — без этого убежище не живёт."} },
                 Buys = new() { ItemType.Material }, BuyRate = 0.5,
                 Stock = Stock("scrap", "cloth", "wire", "battery", "cement", "glass", "rubber", "electronics",
                               "fuel", "toolkit", "nails", "duct_tape", "zipties", "kerosene", "propane", "sparkplug"),
@@ -192,6 +240,7 @@ public class GameStateService
                 Id = "buyer", Name = "Скупщик", Description = "Скупает всё подряд. Дорого продаёт хлам.",
                 Image = "/traders/buyer.png",
                 BuysEverything = true, BuyRate = 0.25, PriceMultiplier = 1.6,
+                Dialogue = new(){ new(){Speaker="Скупщик",Text="Ты живой. Уже хорошо. В этой зоне это редкость."}, new(){Speaker="Скупщик",Text="Память дырявая? Бывает. Но долг и груз — вещи материальные. Ищи следы."}, new(){Speaker="Скупщик",Text="Принеси что-нибудь ценное — и я открою тебе нужные двери."} },
                 Stock = Stock("watch", "amber", "goldchain", "icon", "artifact", "documents",
                               "coffee", "cigarettes", "chocolate", "dogtags", "medal", "cards",
                               "harmonica", "compass", "binoculars", "camera", "radio_parts", "geiger_counter",
@@ -217,11 +266,12 @@ public class GameStateService
     {
         Quests.Clear();
         Quests.AddRange(_quests.CreateTraderQuests());
-        Quests.AddRange(_quests.CreateDailies());
-        Quests.AddRange(_quests.CreateRepeatableQuests());
 
         StoryQuests.Clear();
         StoryQuests.AddRange(_quests.CreateStory());
+
+        SideQuests.Clear();
+        SideQuests.AddRange(_quests.CreateSideQuests());
     }
 
     public void RefreshDailies()
@@ -238,6 +288,10 @@ public class GameStateService
 
     public void PassiveTick()
     {
+        // В рейде автоматическая регенерация (убежище) не работает, но игровое время идёт.
+        AdvanceGameTime(GameMinutesPerTick);
+        if (Raid is { Finished: false }) return;
+
         var p = Player;
         int hpPerTick = PerkEffects.RegenPerTick(p);
 
@@ -285,6 +339,11 @@ public class GameStateService
         Player.GameCompleted = false;
         Player.Freeplay = false;
         Player.UnlockedLocations = new() { "city" };
+        Player.UnlockedTraders = new() { "buyer", "bartender" };
+        Player.GameTimeMinutes = 480;
+        Player.JournalThoughts.Clear();
+        Player.EndingChoice = null;
+        Player.BombHidden = false;
         Player.Perks.Clear();
         Player.TraderRep.Clear();
         Player.Cassettes.Clear();
@@ -345,8 +404,9 @@ public class GameStateService
                 Player = Player,
                 Quests = Quests,
                 StoryQuests = StoryQuests,
+                SideQuests = SideQuests,
                 Raid = Raid,
-                Version = "4",
+                Version = "7.5",
             };
             File.WriteAllText(
                 Path.Combine(SaveDirectory, "autosave.json"),

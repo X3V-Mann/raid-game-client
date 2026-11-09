@@ -7,7 +7,6 @@ import RubleIcon from "../RubleIcon";
 
 const TILE_ICON = {
   tree: "🌲",
-  exit: "🚪",
 };
 
 const avatarSrcFor = (player) => {
@@ -29,6 +28,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
   const [raid, setRaid] = useState(null);
   const [combat, setCombat] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [selectedNpc, setSelectedNpc] = useState(null);
   const [busy, setBusy] = useState(false);
   const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -106,6 +106,13 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
     (x, y) => raid?.cars?.find((c) => c.x === x && c.y === y) || null,
     [raid],
   );
+
+  const npcAt = useCallback(
+    (x, y) => raid?.npcs?.find((n) => n.x === x && n.y === y) || null,
+    [raid],
+  );
+
+  const adjacentToNpc = (n) => !!n && Math.abs(n.x - playerX) <= 1 && Math.abs(n.y - playerY) <= 1 && !(n.x === playerX && n.y === playerY);
 
   const run = async (fn) => {
     if (busyRef.current) return;
@@ -224,6 +231,8 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
 
   const onTileClick = (tile) => {
     if (busy || finished) return;
+    const npc = npcAt(tile.x, tile.y);
+    if (npc) { setSelectedNpc(npc.id); setSelected(null); return; }
     if (tile.type === "building") {
       const b = buildingAt(tile.x, tile.y);
       if (b) enterBuilding(b);
@@ -401,6 +410,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                 const car = tile.type === "car" ? carAt(tile.x, tile.y) : null;
                 const mutant = mutantAt(tile.x, tile.y);
                 const isYou = tile.x === playerX && tile.y === playerY;
+                const npc = !isYou ? npcAt(tile.x, tile.y) : null;
                 const bAnchor = b && b.x === tile.x && b.y === tile.y;
                 const classes = [
                   "raid-tile",
@@ -414,6 +424,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                   b?.cleared ? "cleared" : "",
                   b && selected === b.id ? "selected-building" : "",
                   mutant ? "tile-mutant" : "",
+                  npc ? "tile-npc" : "",
                   isYou ? "you" : "",
                 ]
                   .filter(Boolean)
@@ -425,7 +436,8 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                     className={classes}
                     onClick={() => onTileClick(tile)}
                     title={
-                      mutant
+                      npc ? `💬 ${npc.name}${npc.scripted?" (сюжетный)":""}${npc.canTrade?" · торгует":""} — подойдите и нажмите`
+                      : mutant
                         ? `🐺 ${mutant.name} · видит на ${mutant.visionRadius ?? 3} клетки · здания и деревья закрывают обзор`
                         : b
                         ? `${b.name} · ${b.width}×${b.height}${
@@ -445,9 +457,9 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                                 ? "Переход дальше по локации"
                                 : ""
                     }
-                    style={{ width: 34, height: 34 }}
+                    style={{ width: 34, height: 34, position: npc || (tile.type==="ground"&&npcAt(tile.x,tile.y)) ? "relative" : undefined }}
                   >
-                    {isYou ? <img src={avatarSrcFor(player)} className="tile-avatar" alt="ГГ" /> : mutant ? <img src={mutant.icon} className="tile-enemy-img tile-mutant-img" alt={mutant.name} /> : bAnchor ? b.icon : tile.type === "car" ? "🚗" : tile.type === "tree" ? <img src="/blocks/tree.png" className="tile-img" alt="tree" /> : tile.type === "stash" ? <img src="/blocks/stash.png" className="tile-img" alt="stash" /> : tile.type === "transition" ? "➜" : TILE_ICON[tile.type] || ""}
+                    {isYou ? <img src={avatarSrcFor(player)} className="tile-avatar" alt="ГГ" /> : mutant ? <img src={mutant.icon} className="tile-enemy-img tile-mutant-img" alt={mutant.name} /> : npc ? <img src={npc.icon} className="tile-img" alt={npc.name} style={{borderRadius:"50%", border: npc.scripted?"2px solid #ffd54a":"2px solid #7ecfff"}} onError={(e)=>{e.currentTarget.style.display="none";}} /> : bAnchor ? (String(b.icon).startsWith("/") ? <img src={b.icon} className="tile-img" alt={b.name} onError={(e)=>{e.currentTarget.style.display="none";}} /> : b.icon) : tile.type === "car" ? <img src="/blocks/car.png" className="tile-img" alt="car" /> : tile.type === "tree" ? <img src="/blocks/tree.png" className="tile-img" alt="tree" /> : tile.type === "stash" ? <img src="/blocks/stash.png" className="tile-img" alt="stash" /> : tile.type === "exit" ? <img src="/blocks/exit.png" className="tile-img" alt="exit" /> : tile.type === "transition" ? "➜" : TILE_ICON[tile.type] || ""}
                   </div>
                 );
               })}
@@ -459,10 +471,33 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
             Мутанты видят на 3 клетки, но здания и деревья закрывают им обзор — их можно обойти.
           </div>
 
+          {selectedNpc && (() => {
+            const npc = (raid.npcs||[]).find(n=>n.id===selectedNpc);
+            if (!npc) return null;
+            const adj = Math.abs(npc.x-playerX)<=1 && Math.abs(npc.y-playerY)<=1 && !(npc.x===playerX&&npc.y===playerY);
+            return (
+              <div className={`raid-building-card ${adj ? "" : "far"}`}>
+                <div className="raid-building-head">
+                  <span className="raid-building-icon"><img src={npc.icon} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:"50%"}} onError={(e)=>{e.currentTarget.style.display="none";}} /></span>
+                  <div><b>{npc.name}{npc.scripted?" (сюжетный)":""}</b><small>{npc.canTrade?"Может поторговать":"Нейтральный персонаж"}</small></div>
+                  <button className="close-btn" onClick={()=>setSelectedNpc(null)} style={{marginLeft:"auto"}}>✖</button>
+                </div>
+                <div className="raid-building-desc">{(npc.dialogue||[]).slice(0,3).map((l,i)=><div key={i}>«{l}»</div>)}</div>
+                <div className="raid-building-actions" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <button className="btn-next" disabled={busy||!adj} onClick={()=>run(()=>api.npcTalk(npc.id))}>💬 Поговорить</button>
+                  {npc.canTrade && (npc.tradeCodes||[]).slice(0,4).map(code=>(
+                    <button key={code} disabled={busy||!adj} onClick={()=>run(()=>api.npcBuy(npc.id, code, 1))}>Купить: {code}</button>
+                  ))}
+                </div>
+                {!adj && <span className="raid-hint">Подойдите к персонажу ближе.</span>}
+              </div>
+            );
+          })()}
+
           {selectedBuilding && (
             <div className={`raid-building-card ${adjacentTo(selectedBuilding) ? "" : "far"}`}>
               <div className="raid-building-head">
-                <span className="raid-building-icon">{selectedBuilding.icon}</span>
+                <span className="raid-building-icon">{String(selectedBuilding.icon).startsWith("/") ? <img src={selectedBuilding.icon} alt="" style={{width:28,height:28,objectFit:"contain"}} onError={(e)=>{e.currentTarget.style.display="none";}} /> : selectedBuilding.icon}</span>
                 <div>
                   <b>{selectedBuilding.name}</b>
                   <small>
@@ -521,7 +556,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
               </button>
             )}
             {!raid.atExit && (
-              <span className="raid-hint">Выход на востоке карты: 🚪</span>
+              <span className="raid-hint">Выход на востоке карты: <img src="/blocks/exit.png" alt="выход" style={{width:16,height:16,verticalAlign:'middle'}} /></span>
             )}
             <button className="btn-abandon" disabled={busy} onClick={abandon}>
               🏃 Бросить рейд

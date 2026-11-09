@@ -1,33 +1,21 @@
-import { useEffect, useState } from "react";
-
 export default function TopBar({ player }) {
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const ss = String(now.getSeconds()).padStart(2, "0");
-
-  const date = now.toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const t = player?.gameTimeMinutes ?? 480;
+  const day = Math.floor(t / 1440) + 1;
+  const mins = ((t % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(mins / 60)).padStart(2, "0");
+  const mm = String(mins % 60).padStart(2, "0");
+  const night = mins < 360 || mins >= 1260;
 
   return (
     <div className="top-bar">
       <div className="top-bar-left">
         <span className="top-bar-icon">👤</span>
-        <b className="top-bar-name">{player.name || "Безымянный"}</b>
+        <b className="top-bar-name">{player?.name || "Безымянный"}</b>
       </div>
       <div className="top-bar-right">
-        <span className="top-bar-date">{date}</span>
-        <span className="top-bar-time">
-          {hh}:{mm}:{ss}
+        <span className="top-bar-date">День {day}</span>
+        <span className="top-bar-time" title={night ? "Ночь" : "День"}>
+          {night ? "🌙" : "☀️"} {hh}:{mm}
         </span>
       </div>
     </div>

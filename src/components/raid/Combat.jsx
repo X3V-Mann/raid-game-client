@@ -480,6 +480,7 @@ export default function Combat({ initial, player, onUpdate, onClose, onDeath, on
               const enemy = enemies.find((e) => e.x === tile.x && e.y === tile.y);
               const obj = objects.find((o) => o.x === tile.x && o.y === tile.y);
               const isPlayer = tile.x === state.playerX && tile.y === state.playerY;
+              const isAttacker = enemy && state.lastAttackerId === enemy.id;
               const classes = [
                 "raid-tile",
                 (tile.x + tile.y) % 2 === 0 ? "tile-light" : "tile-dark",
@@ -488,6 +489,7 @@ export default function Combat({ initial, player, onUpdate, onClose, onDeath, on
                 enemy && enemy.hp > 0 ? "enemy" : "",
                 enemy && enemy.hp <= 0 ? "corpse" : "",
                 enemy && targetEnemy?.id === enemy.id ? "selected" : "",
+                isAttacker ? "attacker" : "",
                 obj ? `interior-obj interior-${obj.kind}` : "",
                 obj?.looted ? "cleared" : "",
                 isPlayer ? "you" : "",
@@ -522,10 +524,10 @@ export default function Combat({ initial, player, onUpdate, onClose, onDeath, on
                       <span>{enemy.icon || "🧟"}</span>
                     )
                   ) : enemy ? (
-                    <span>☠️</span>
+                    <img src="/blocks/corpse.png" className="tile-img" alt="corpse" onError={(e) => { e.currentTarget.outerHTML = '<span>☠️</span>'; }} />
                   ) : obj ? (
-                    obj.sprite?.startsWith?.("/") ? (
-                      <img src={obj.sprite} className="tile-img" alt={obj.name} onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                    obj.sprite?.startsWith?.("/") || obj.kind === "exit" ? (
+                      <img src={obj.sprite || "/blocks/exit.png"} className="tile-img" alt={obj.name} style={{ opacity: obj.looted ? 0.45 : 1 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
                     ) : (
                       <span style={{ opacity: obj.looted ? 0.45 : 1 }}>{obj.icon || "📦"}</span>
                     )

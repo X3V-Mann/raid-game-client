@@ -11,9 +11,10 @@ public class GameController : ControllerBase
     private readonly GameStateService _state;
     private readonly ItemCatalog _catalog;
     private readonly QuestService _questSvc;
+    private readonly LocationCatalog _locations;
 
-    public GameController(GameStateService s, ItemCatalog c, QuestService q)
-        => (_state, _catalog, _questSvc) = (s, c, q);
+    public GameController(GameStateService s, ItemCatalog c, QuestService q, LocationCatalog l)
+        => (_state, _catalog, _questSvc, _locations) = (s, c, q, l);
 
     // --- Игрок ---
     [HttpGet("player")]
@@ -278,8 +279,13 @@ public class GameController : ControllerBase
         i != null && (string.Equals(i.Code, "sphere", StringComparison.OrdinalIgnoreCase)
                       || string.Equals(i.Code, "exo", StringComparison.OrdinalIgnoreCase));
 
+    private static readonly HashSet<string> MutantPartCodes = new(StringComparer.OrdinalIgnoreCase)
+        { "dog_tail", "flesh_eye", "flesh_fat", "boar_meat", "boar_hoof" };
+
     private static bool TraderBuys(Trader trader, Item item) =>
-        trader.BuysEverything || trader.Buys.Contains(item.Type);
+        trader.BuysEverything
+        || (MutantPartCodes.Contains(item.Code) && (trader.Id == "bartender" || trader.Id == "buyer"))
+        || trader.Buys.Contains(item.Type);
 
     private static int SellUnitPrice(Item item, Trader trader, Player p) =>
         Math.Max(1, (int)Math.Floor(item.Price * trader.BuyRate * PerkEffects.SellMultiplier(p)));
@@ -364,6 +370,7 @@ public class GameController : ControllerBase
             t.LoyaltyRep = TraderLoyalty.Rep(p, t.Id);
             t.LoyaltyCurrent = TraderLoyalty.CurrentLevelFloor(p, t.Id);
             t.LoyaltyNext = TraderLoyalty.NextThreshold(p, t.Id);
+            t.IsUnlocked = p.UnlockedTraders.Contains(t.Id);
         }
 
         return new
@@ -371,6 +378,7 @@ public class GameController : ControllerBase
             traders = _state.Traders,
             buyMultiplier = PerkEffects.BuyMultiplier(p),
             sellMultiplier = PerkEffects.SellMultiplier(p),
+            gameTime = _state.GetGameTimeInfo(),
         };
     }
 
@@ -522,27 +530,29 @@ public class GameController : ControllerBase
         return Math.Max(50, (int)Math.Round(200 * (lvl + 1) * discount));
     }
 
-    // Разные модули требуют разные материалы и разное их количество.
-    private static readonly Dictionary<string, List<(string Code, int Need)>> ModuleMaterials = new()
+    public record ShelterReq(string Code, int Need, bool FromRaid = false);
+
+    // Каждый модуль требует свой набор предметов (2–5 видов, 1–10 шт.); часть — только из рейда.
+    private static readonly Dictionary<string, List<ShelterReq>> ModuleMaterials = new()
     {
-        ["medblock"] = new() { ("scrap", 2), ("cloth", 1), ("wire", 1) },
-        ["rest"]     = new() { ("cloth", 3), ("scrap", 2) },
-        ["kitchen"]  = new() { ("scrap", 3), ("cloth", 2), ("wire", 1) },
-        ["water"]    = new() { ("scrap", 2), ("wire", 2), ("battery", 1) },
-        ["stash"]    = new() { ("scrap", 2), ("wire", 2), ("glass", 1) },
-        ["workshop"] = new() { ("electronics", 2), ("scrap", 2), ("wire", 1) },
-        ["generator"]= new() { ("battery", 2), ("scrap", 2), ("wire", 1), ("fuel", 1) },
-        ["armory"]   = new() { ("scrap", 3), ("wire", 2), ("electronics", 1) },
-        ["gym"]      = new() { ("scrap", 2), ("cloth", 2), ("cement", 1) },
+        ["medblock"] = new() { new("cloth", 6), new("bandage", 4), new("mineral_water", 3), new("medkit_army", 1, true) },
+        ["rest"]     = new() { new("fleece_fabric", 5), new("cloth", 8), new("bolts", 10), new("paracord", 2) },
+        ["kitchen"]  = new() { new("scrap", 7), new("glass", 4), new("duct_tape", 3), new("canned", 2, true), new("salt", 5) },
+        ["water"]    = new() { new("rubber", 4), new("wire", 6), new("capacitors", 2), new("mineral_water", 5) },
+        ["stash"]    = new() { new("scrap", 10), new("nails", 8), new("duct_tape", 4), new("zipties", 6) },
+        ["workshop"] = new() { new("toolkit", 1), new("electronics", 3), new("rosin", 2), new("resistors", 4), new("screwdriver_set", 1) },
+        ["generator"]= new() { new("battery", 1, true), new("wire", 8), new("fuel", 2), new("capacitors", 3), new("textolite", 1) },
+        ["armory"]   = new() { new("scrap", 9), new("bolts", 10), new("nuts", 10), new("textolite", 2), new("tech_docs", 1, true) },
+        ["gym"]      = new() { new("cement", 4), new("rubber", 6), new("cloth", 5), new("nuts", 7) },
     };
 
-    private static List<(string Code, int Need)> UpgradeMaterials(ShelterState s, string id)
+    private static List<ShelterReq> UpgradeMaterials(ShelterState s, string id)
     {
-        int lvl = ShelterLevel(s, id);
-        int need = lvl + 1;
         if (ModuleMaterials.TryGetValue(id, out var list) && list.Count > 0)
             return list;
-        return new List<(string Code, int Need)> { ("scrap", need), ("cloth", need), ("wire", need) };
+        int lvl = ShelterLevel(s, id);
+        int need = Math.Clamp(lvl + 1, 1, 10);
+        return new List<ShelterReq> { new("scrap", need), new("cloth", need) };
     }
 
     [HttpGet("shelter/info")]
@@ -554,14 +564,21 @@ public class GameController : ControllerBase
         var modules = ShelterModules.Select(kv =>
         {
             int lvl = ShelterLevel(s, kv.Key);
-            var reqs = UpgradeMaterials(s, kv.Key).Select(r => new
+            var reqs = UpgradeMaterials(s, kv.Key).Select(r =>
             {
-                code = r.Code,
-                name = _catalog.Get(r.Code)?.Name ?? r.Code,
-                need = r.Need,
-                // Предметы для улучшения могут быть как в инвентаре, так и в схроне.
-                have = InventoryHelper.CountByCode(p, r.Code)
-                     + p.Shelter.Stash.Where(i => i.Code == r.Code).Sum(i => Math.Max(0, i.Count)),
+                int have = r.FromRaid
+                    ? InventoryHelper.CountByCodeFromRaid(p, r.Code)
+                      + p.Shelter.Stash.Where(i => i.Code == r.Code && i.FoundInRaid).Sum(i => Math.Max(0, i.Count))
+                    : InventoryHelper.CountByCode(p, r.Code)
+                      + p.Shelter.Stash.Where(i => i.Code == r.Code).Sum(i => Math.Max(0, i.Count));
+                return new
+                {
+                    code = r.Code,
+                    name = _catalog.Get(r.Code)?.Name ?? r.Code,
+                    need = r.Need,
+                    have,
+                    fromRaid = r.FromRaid,
+                };
             }).ToList();
 
             return new
@@ -593,32 +610,53 @@ public class GameController : ControllerBase
         int moneyCost = UpgradeMoneyCost(s, module);
         var materials = UpgradeMaterials(s, module);
 
-        foreach (var (code, need) in materials)
+        foreach (var req in materials)
         {
-            // Требуются материалы: инвентарь + схрон убежища.
-            int haveNow = InventoryHelper.CountByCode(p, code)
-                        + p.Shelter.Stash.Where(i => i.Code == code).Sum(i => Math.Max(0, i.Count));
-            if (haveNow < need)
-                return BadRequest($"Не хватает: {_catalog.Get(code)?.Name ?? code} ×{need}");
+            int haveNow = req.FromRaid
+                ? InventoryHelper.CountByCodeFromRaid(p, req.Code)
+                  + p.Shelter.Stash.Where(i => i.Code == req.Code && i.FoundInRaid).Sum(i => Math.Max(0, i.Count))
+                : InventoryHelper.CountByCode(p, req.Code)
+                  + p.Shelter.Stash.Where(i => i.Code == req.Code).Sum(i => Math.Max(0, i.Count));
+            if (haveNow < req.Need)
+            {
+                string suffix = req.FromRaid ? " (из рейда)" : "";
+                return BadRequest($"Не хватает: {_catalog.Get(req.Code)?.Name ?? req.Code}{suffix} ×{req.Need}");
+            }
         }
         if (p.Money < moneyCost) return BadRequest($"Нужно {moneyCost} руб.");
 
         p.Money -= moneyCost; p.Stats.MoneySpent += moneyCost;
-        foreach (var (code, need) in materials)
+        foreach (var req in materials)
         {
-            // Списываем из инвентаря, затем из схрона.
-            InventoryHelper.RemoveAllByCode(p, code, need);
-            int remaining = need - InventoryHelper.CountByCode(p, code);
-            if (remaining > 0)
+            int remaining = req.Need;
+            if (req.FromRaid)
             {
-                var stashItems = p.Shelter.Stash.Where(i => i.Code == code).ToList();
-                foreach (var i in stashItems)
+                remaining -= InventoryHelper.RemoveAllByCodeFromRaid(p, req.Code, remaining);
+                if (remaining > 0)
                 {
-                    if (remaining <= 0) break;
-                    int take = Math.Min(Math.Max(1, i.Count), remaining);
-                    i.Count -= take;
-                    remaining -= take;
-                    if (i.Count <= 0) p.Shelter.Stash.Remove(i);
+                    foreach (var i in p.Shelter.Stash.Where(i => i.Code == req.Code && i.FoundInRaid).ToList())
+                    {
+                        if (remaining <= 0) break;
+                        int take = Math.Min(Math.Max(1, i.Count), remaining);
+                        i.Count -= take;
+                        remaining -= take;
+                        if (i.Count <= 0) p.Shelter.Stash.Remove(i);
+                    }
+                }
+            }
+            else
+            {
+                remaining -= InventoryHelper.RemoveAllByCode(p, req.Code, remaining);
+                if (remaining > 0)
+                {
+                    foreach (var i in p.Shelter.Stash.Where(i => i.Code == req.Code).ToList())
+                    {
+                        if (remaining <= 0) break;
+                        int take = Math.Min(Math.Max(1, i.Count), remaining);
+                        i.Count -= take;
+                        remaining -= take;
+                        if (i.Count <= 0) p.Shelter.Stash.Remove(i);
+                    }
                 }
             }
         }
@@ -635,6 +673,8 @@ public class GameController : ControllerBase
     [HttpPost("stash/store/{itemId}")]
     public IActionResult StoreStash(string itemId)
     {
+        if (_state.Raid is { Finished: false })
+            return BadRequest("Нельзя переносить вещи в схрон во время рейда");
         var p = _state.Player;
         var item = p.Inventory.FirstOrDefault(i => i.Id == itemId);
         if (item == null) return NotFound();
@@ -662,6 +702,8 @@ public class GameController : ControllerBase
     [HttpPost("stash/take/{itemId}")]
     public IActionResult TakeStash(string itemId)
     {
+        if (_state.Raid is { Finished: false })
+            return BadRequest("Нельзя использовать схрон убежища во время рейда");
         var p = _state.Player;
         var item = p.Shelter.Stash.FirstOrDefault(i => i.Id == itemId);
         if (item == null) return NotFound();
@@ -869,6 +911,9 @@ public class GameController : ControllerBase
             allCount = _state.StoryQuests.Count,
             chapters,
             gameCompleted = _state.Player.GameCompleted,
+            freeplay = _state.Player.Freeplay,
+            endingChoice = _state.Player.EndingChoice,
+            bombHidden = _state.Player.BombHidden,
         };
     }
 
@@ -899,8 +944,12 @@ public class GameController : ControllerBase
         if (q.IsDaily && q.AvailableAt.HasValue && q.AvailableAt > DateTime.Now)
             return BadRequest("Это задание станет доступно позже");
 
+        if (q.IsUrgent && q.IsFailed) return BadRequest("Срок срочного задания истёк");
         q.IsAccepted = true;
-        return Ok(new { accepted = true });
+        q.IsFailed = false;
+        if (q.IsUrgent && q.UrgentDurationMinutes > 0)
+            q.DeadlineGameMinutes = _state.Player.GameTimeMinutes + q.UrgentDurationMinutes;
+        return Ok(new { accepted = true, deadline = q.DeadlineGameMinutes, time = _state.GetGameTimeInfo() });
     }
 
     public record ProgressDto(string Type, string? Code, int Count);
@@ -920,36 +969,48 @@ public class GameController : ControllerBase
     [HttpPost("quests/{id}/complete")]
     public IActionResult CompleteQuest(string id)
     {
+        _state.ExpireUrgentQuests();
         var q = FindQuest(id);
         var p = _state.Player;
         if (q == null || !q.IsAccepted || q.IsCompleted) return BadRequest("Недоступно");
+        if (q.IsFailed) return BadRequest("Срок срочного задания истёк");
 
-        if (q.IsStory)
+        if (q.Id == "s4_07")
+            return Ok(new { player = p, requiresChoice = true, choices = new[] { "detonate", "hide" } });
+
+        if (q.IsStory && q.Category == QuestCategory.Story)
         {
             var current = _questSvc.GetCurrentStory(_state.StoryQuests);
             if (current == null || current.Id != q.Id)
-                return BadRequest("Сначала завершите предыдущую главу");
+                return BadRequest("Сначала завершите текущее сюжетное задание");
         }
         else if (!IsChainReady(q))
         {
-            return BadRequest("Сначала завершите предыдущее задание торговца");
+            return BadRequest("Сначала завершите предыдущее задание");
         }
 
         if (q.Type == QuestType.Fetch)
         {
             if (string.IsNullOrEmpty(q.TargetItemCode)) return BadRequest("Ошибка квеста");
-            int have = InventoryHelper.CountByCode(p, q.TargetItemCode)
-                      + p.Shelter.Stash.Where(i => i.Code == q.TargetItemCode).Sum(i => Math.Max(0, i.Count));
-            if (have < q.TargetCount) return BadRequest("Нет предметов");
+            int have = InventoryHelper.CountByCodeFromRaid(p, q.TargetItemCode)
+                      + p.Shelter.Stash.Where(i => i.Code == q.TargetItemCode && i.FoundInRaid).Sum(i => Math.Max(0, i.Count));
+            if (have < q.TargetCount) return BadRequest("Нужны предметы, найденные в рейде");
         }
-        else if (q.Progress < q.TargetCount) return BadRequest("Не выполнено");
+        else if (q.Type == QuestType.Talk)
+        {
+            q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+        }
+        else
+        {
+            if (q.TargetCount > 0 && q.Progress < q.TargetCount) return BadRequest("Не выполнено");
+        }
 
         var backup = CloneInventory(p);
         if (q.Type == QuestType.Fetch)
         {
-            // Сдаём сначала из инвентаря, затем из схрона убежища.
+            // Сдаём сначала из инвентаря, затем из схрона убежища (только предметы из рейда).
             int remaining = q.TargetCount;
-            foreach (var i in p.Inventory.Where(i => i.Code == q.TargetItemCode).ToList())
+            foreach (var i in p.Inventory.Where(i => i.Code == q.TargetItemCode && i.FoundInRaid).ToList())
             {
                 if (remaining <= 0) break;
                 int take = Math.Min(Math.Max(1, i.Count), remaining);
@@ -957,7 +1018,7 @@ public class GameController : ControllerBase
                 remaining -= take;
                 if (i.Count <= 0) p.Inventory.Remove(i);
             }
-            foreach (var i in p.Shelter.Stash.Where(i => i.Code == q.TargetItemCode).ToList())
+            foreach (var i in p.Shelter.Stash.Where(i => i.Code == q.TargetItemCode && i.FoundInRaid).ToList())
             {
                 if (remaining <= 0) break;
                 int take = Math.Min(Math.Max(1, i.Count), remaining);
@@ -986,6 +1047,9 @@ public class GameController : ControllerBase
         if (!string.IsNullOrEmpty(q.Reward.UnlockLocation)
             && !p.UnlockedLocations.Contains(q.Reward.UnlockLocation))
             p.UnlockedLocations.Add(q.Reward.UnlockLocation);
+        if (!string.IsNullOrEmpty(q.Reward.UnlockTrader)
+            && !p.UnlockedTraders.Contains(q.Reward.UnlockTrader))
+            p.UnlockedTraders.Add(q.Reward.UnlockTrader);
 
         if (!string.IsNullOrEmpty(q.TraderId))
             TraderLoyalty.Add(p, q.TraderId, q.IsDaily ? 15 : 50);
@@ -996,12 +1060,13 @@ public class GameController : ControllerBase
         if (q.IsStory)
         {
             var next = _questSvc.GetCurrentStory(_state.StoryQuests);
-            if (next != null) next.IsAccepted = true;
-            if (q.Id.EndsWith("_10_10"))
-            {
-                p.GameCompleted = true;
-                p.Freeplay = true;
-            }
+            if (next != null && !next.IsCompleted) next.IsAccepted = true;
+        }
+        // Финальный выбор: s4_07 завершается через /story/ending-choice, здесь только сигналим UI.
+        if (q.Id == "story_9_10" || q.Id.EndsWith("_10_10"))
+        {
+            p.GameCompleted = true;
+            p.Freeplay = true;
         }
 
         PlayerProgression.Apply(p);
@@ -1025,10 +1090,125 @@ public class GameController : ControllerBase
             BackpackSlots = i.BackpackSlots, Restore = i.Restore, Restores = i.Restores,
             Count = i.Count, Lootable = i.Lootable, LootTier = i.LootTier,
             RequiredLoyalty = i.RequiredLoyalty, Weight = i.Weight,
-            IsGrenade = i.IsGrenade, Caliber = i.Caliber,
+            IsGrenade = i.IsGrenade, Caliber = i.Caliber, FoundInRaid = i.FoundInRaid,
         }).ToList();
 
-    private Quest? FindQuest(string id) => _state.Quests.Concat(_state.StoryQuests).FirstOrDefault(q => q.Id == id);
+    private Quest? FindQuest(string id) => _state.AllQuests().FirstOrDefault(q => q.Id == id);
+
+    // --- Игровое время ---
+    [HttpGet("gametime")]
+    public object GetGameTime() => _state.GetGameTimeInfo();
+
+    [HttpPost("gametime/advance")]
+    public object AdvanceTime([FromBody] TimeAdvanceDto dto)
+    {
+        _state.AdvanceGameTime(Math.Clamp(dto.Minutes, 0, 1440));
+        return new { time = _state.GetGameTimeInfo() };
+    }
+    public record TimeAdvanceDto(int Minutes);
+
+    // --- Доска объявлений (побочные задания) ---
+    [HttpGet("quests/board")]
+    public object GetBoard()
+    {
+        _state.ExpireUrgentQuests();
+        var list = _state.SideQuests
+            .Where(q => !q.IsCompleted || q.IsRepeatable)
+            .OrderByDescending(q => q.IsUrgent)
+            .ThenBy(q => q.Order)
+            .ToList();
+        return new { quests = list, time = _state.GetGameTimeInfo() };
+    }
+
+    // --- Диалог торговца ---
+    [HttpGet("traders/{traderId}/dialogue")]
+    public IActionResult GetDialogue(string traderId)
+    {
+        var t = _state.Traders.FirstOrDefault(x => x.Id == traderId);
+        if (t == null) return NotFound();
+        var p = _state.Player;
+        var unlocked = p.UnlockedTraders.Contains(traderId);
+        var traderQuests = _state.Quests.Where(q => q.TraderId == traderId)
+            .OrderBy(q => q.Order).ToList();
+        return Ok(new { trader = new { t.Id, t.Name, t.Description, t.Image, isUnlocked = unlocked }, dialogue = t.Dialogue, quests = traderQuests, time = _state.GetGameTimeInfo() });
+    }
+
+    [HttpPost("traders/{traderId}/talk")]
+    public IActionResult TalkTrader(string traderId)
+    {
+        var t = _state.Traders.FirstOrDefault(x => x.Id == traderId);
+        if (t == null) return NotFound();
+        var p = _state.Player;
+        if (!p.UnlockedTraders.Contains(traderId)) return BadRequest("Торговец недоступен");
+        foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Talk
+                     && string.Equals(q.TraderId, traderId, StringComparison.OrdinalIgnoreCase)))
+            q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+        return Ok(new { ok = true, player = p });
+    }
+
+    public record EndingChoiceDto(string Choice);
+    [HttpPost("story/ending-choice")]
+    public IActionResult EndingChoice([FromBody] EndingChoiceDto dto)
+    {
+        var p = _state.Player;
+        var s4_06 = FindQuest("s4_06");
+        if (s4_06 == null || !s4_06.IsCompleted) return BadRequest("Сначала завершите «Точку невозврата» (поговорите с Барменом).");
+        var s4_07 = FindQuest("s4_07");
+        if (s4_07 == null) return BadRequest("Финальное задание не найдено.");
+        if (p.EndingChoice != null) return Ok(new { player = p, message = "Выбор уже сделан.", gameCompleted = p.GameCompleted });
+
+        string choice = (dto.Choice ?? "").Trim().ToLowerInvariant();
+        if (choice is "detonate" or "bomb" or "взорвать")
+        {
+            p.EndingChoice = "detonate";
+            p.BombHidden = false;
+            p.GameCompleted = true;
+            p.Freeplay = false; // DLC-заглушка: взрыв завершает текущую ветку
+            p.JournalThoughts.Add("Я активировал заряд на Градирнях. Небо вспыхнуло белым. Объект уничтожен. Связь с прошлым оборвалась вместе с ударной волной. Конец? Или только начало другой истории...");
+            s4_07.IsAccepted = true; s4_07.IsCompleted = true; s4_07.Progress = Math.Max(1, s4_07.TargetCount);
+            _state.Persist();
+            return Ok(new { player = p, gameCompleted = true, freeplay = false, choice = "detonate",
+                message = "Игра закончена. Вы взорвали ядерный заряд на Градирнях.\n\nУдарная волна стерла объект, наёмников и все следы секретной разработки. Тайна груза похоронена под бетоном и пеплом. ГГ выжил — но цена оказалась слишком высокой. (Заглушка: в будущем здесь откроется DLC-ветка последствий.)" });
+        }
+        if (choice is "hide" or "freeplay" or "спрятать")
+        {
+            p.EndingChoice = "hide";
+            p.BombHidden = true;
+            p.GameCompleted = true;
+            p.Freeplay = true;
+            // дать бомбу в инвентарь/убежище как напоминание (если есть место)
+            if (!p.Inventory.Any(i => i.Code == "atomic_bomb") && !p.Shelter.Stash.Any(i => i.Code == "atomic_bomb"))
+            {
+                var bomb = _catalog.Create("atomic_bomb"); bomb.FoundInRaid = true;
+                if (!InventoryHelper.AddToInventory(p, bomb)) p.Shelter.Stash.Add(bomb);
+            }
+            p.JournalThoughts.Add("Я спрятал заряд. Не сегодня. Зона ещё не сказала своего последнего слова, и, возможно, эта штука ещё пригодится. А пока — свободная игра.");
+            s4_07.IsAccepted = true; s4_07.IsCompleted = true; s4_07.Progress = Math.Max(1, s4_07.TargetCount);
+            _state.Persist();
+            return Ok(new { player = p, gameCompleted = true, freeplay = true, choice = "hide",
+                message = "Вы спрятали ядерный заряд. Финал отложен — начинается свободная игра.\n\nГГ уносит устройство с Градирней и прячет его. Если передумаете, заряд остаётся с вами (спрайт бомбы — в вашем снаряжении/убежище). Зона открыта." });
+        }
+        return BadRequest("Выберите: detonate (взорвать) или hide (спрятать).");
+    }
+
+    // --- Личный дневник / справочник ---
+    [HttpGet("diary")]
+    public object GetDiary()
+    {
+        var locs = _locations.All.Select(l => new { l.Id, l.Name, l.Tier, l.Description, l.Icon, enemies = l.Enemies.Select(e => new { e.Name, e.Icon, e.BaseHp, e.BaseDamage, e.Ranged }).ToList() }).ToList();
+        var items = _catalog.All.Where(i => i.Lootable || i.Type == ItemType.Misc || i.Type == ItemType.Material || i.Type == ItemType.Medicine || i.Type == ItemType.Food || i.Type == ItemType.Drink)
+            .Select(i => new { i.Code, i.Name, i.Description, i.Icon, type = i.Type.ToString(), i.Price }).Take(400).ToList();
+        return new { thoughts = _state.Player.JournalThoughts, referenceItems = items, referenceLocations = locs, time = _state.GetGameTimeInfo() };
+    }
+
+    [HttpPost("diary/thought")]
+    public IActionResult AddThought([FromBody] ThoughtDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.Text) && !_state.Player.JournalThoughts.Contains(dto.Text))
+            _state.Player.JournalThoughts.Add(dto.Text);
+        return Ok(new { thoughts = _state.Player.JournalThoughts });
+    }
+    public record ThoughtDto(string Text);
 
     // --- Статистика ---
     public record StatsSyncDto(int Cells, bool Survived);

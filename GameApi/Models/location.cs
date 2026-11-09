@@ -9,6 +9,8 @@ public class Location
     public string Image { get; set; } = "";
     public string Icon { get; set; } = "";
     public double BossChance { get; set; } = 0.1;
+    public string BossName { get; set; } = "БОСС";
+    public string BossIcon { get; set; } = "/enemies/boss.png";
     public Dictionary<Rarity, double> RarityWeights { get; set; } = new();
     public List<EnemyTemplate> Enemies { get; set; } = new();
 
