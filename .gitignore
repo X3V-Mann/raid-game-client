@@ -23,6 +23,7 @@ src-tauri/binaries/*.dll
 src-tauri/binaries/*.pdb
 src-tauri/binaries/*.json
 src-tauri/binaries/wwwroot/
+src-tauri/binaries/_publish/
 
 # Сборка бэкенда
 GameApi/bin/

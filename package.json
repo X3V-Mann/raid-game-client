@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "tauri": "tauri",
-    "tauri:prepare-api": "npm run build:api && dotnet publish GameApi/GameApi.csproj -c Release -r win-x64 --self-contained true -o src-tauri/binaries && node -e \"const fs=require('fs');const p='src-tauri/binaries';if(fs.existsSync(p+'/GameApi.exe'))fs.copyFileSync(p+'/GameApi.exe',p+'/GameApi-x86_64-pc-windows-msvc.exe')\"",
+    "tauri:prepare-api": "npm run build:api && dotnet publish GameApi/GameApi.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeAllContentForSelfExtract=true -o src-tauri/binaries/_publish && node -e \"const fs=require('fs');const p='src-tauri/binaries';fs.copyFileSync(p+'/_publish/GameApi.exe', p+'/GameApi-x86_64-pc-windows-msvc.exe');fs.rmSync(p+'/_publish',{recursive:true,force:true});console.log('sidecar ready')\"",
     "tauri:build": "npm run tauri:prepare-api && tauri build",
     "tauri:dev": "tauri dev"
   },

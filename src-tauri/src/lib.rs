@@ -71,17 +71,14 @@ pub fn run() {
                 let _ = std::fs::create_dir_all(&save_dir);
                 let sidecar = app.shell().sidecar("GameApi");
                 if let Ok(cmd) = sidecar {
-                    let content_root = app
-                        .path()
-                        .resource_dir()
-                        .ok()
-                        .map(|p| p.join("binaries"))
-                        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                    let content_root = save_dir.join("appdata");
+                    let _ = std::fs::create_dir_all(&content_root);
                     let _child = cmd
                         .env("ASPNETCORE_URLS", format!("http://127.0.0.1:{port}"))
                         .env("ASPNETCORE_CONTENTROOT", content_root.to_string_lossy().to_string())
                         .env("ASPNETCORE_ENVIRONMENT", "Production")
                         .env("RAID_SAVE_DIR", save_dir.to_string_lossy().to_string())
+                        .current_dir(save_dir.clone())
                         .spawn();
                 }
             }
