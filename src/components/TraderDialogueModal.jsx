@@ -43,13 +43,13 @@ export default function TraderDialogueModal({ traderId, traderName, onClose, onU
             </div>
             <h4>Задания (сюжет/цепочка)</h4>
             <div className="quest-list" style={{maxHeight:360,overflow:"auto"}}>
-              {(data.quests||[]).length === 0 ? <p className="desc">Нет доступных заданий.</p> : data.quests.map(q=> (
+              {(data.quests||[]).length === 0 ? <p className="desc">Нет доступных заданий. Новые появятся после выполнения предыдущих (выполненные — во вкладке «Выполненные» дневника).</p> : data.quests.map(q=> (
                 <div key={q.id} className={`quest ${q.isCompleted?"done":""}`}>
                   <b>{q.icon ? <img src={q.icon} alt="" style={{width:18,height:18,verticalAlign:"middle",marginRight:4}} onError={(e)=>{e.currentTarget.style.display="none";}}/>:null}{q.title}</b>
                   <p>{q.description}</p>
                   {q.isAccepted && !q.isCompleted && (q.type===0||q.type==="Fetch") && <span>Нужно: {q.targetItemName||q.targetItemCode} ×{q.targetCount} (из рейда)</span>}
                   {q.isAccepted && !q.isCompleted && q.type!==0 && q.type!=="Fetch" && q.targetCount>0 && <span>Прогресс: {q.progress}/{q.targetCount}</span>}
-                  <span className="quest-reward">Награда: {q.reward?.money||0} <RubleIcon size={13} />{q.reward?.xp?` · ${q.reward.xp} XP`:""}{q.reward?.unlockTrader?" · 🤝 торговец":""}{q.reward?.unlockLocation?" · 🔓 локация":""}</span>
+                  <span className="quest-reward">Награда: {q.reward?.money||0} <RubleIcon size={13} />{q.reward?.xp?` · ${q.reward.xp} опыта`:""}{q.reward?.unlockTrader?" · 🤝 торговец":""}{q.reward?.unlockLocation?" · 🔓 локация":""}</span>
                   <div>
                     {!q.isAccepted && !q.isCompleted && <button disabled={busy} onClick={()=>actQuest(()=>api.acceptQuest(q.id))}>Принять</button>}
                     {q.isAccepted && !q.isCompleted && <button disabled={busy} onClick={()=>actQuest(()=>api.completeQuest(q.id),true)}>Сдать</button>}

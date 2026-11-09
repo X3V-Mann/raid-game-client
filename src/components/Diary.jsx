@@ -11,7 +11,7 @@ function iconImg(src) {
 export default function Diary({ act }) {
   const [story, setStory] = useState(null);
   const [diary, setDiary] = useState(null);
-  const [sub, setSub] = useState("quests"); // quests | thoughts | notes | ref
+  const [sub, setSub] = useState("quests"); // quests | completed | thoughts | notes | ref
   const [refTab, setRefTab] = useState("items");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
@@ -57,7 +57,7 @@ export default function Diary({ act }) {
       <p>{q.description}</p>
       {q.isAccepted && !q.isCompleted && q.type !== 0 && q.type !== "Fetch" && q.targetCount > 0 && q.id !== "s4_07" && <span>Прогресс: {q.progress}/{q.targetCount}</span>}
       {q.isAccepted && !q.isCompleted && (q.type === 0 || q.type === "Fetch") && <span>Нужно: {q.targetItemName || q.targetItemCode} ×{q.targetCount} (из рейда)</span>}
-      <span className="quest-reward">Награда: {q.reward?.money || 0} <RubleIcon size={13} />{q.reward?.xp ? ` · ${q.reward.xp} XP` : ""}{q.reward?.unlockLocation ? " · 🔓 локация" : ""}{q.reward?.unlockTrader ? " · 🤝 торговец" : ""}</span>
+      <span className="quest-reward">Награда: {q.reward?.money || 0} <RubleIcon size={13} />{q.reward?.xp ? ` · ${q.reward.xp} опыта` : ""}{q.reward?.unlockLocation ? " · 🔓 локация" : ""}{q.reward?.unlockTrader ? " · 🤝 торговец" : ""}</span>
       {q.journalNote && <p className="desc"><i>«{q.journalNote}»</i></p>}
       <div>
         {!q.isAccepted && !q.isCompleted && !locked && <button disabled={busy} onClick={() => doAction(() => api.acceptQuest(q.id))}>Принять</button>}
@@ -76,7 +76,8 @@ export default function Diary({ act }) {
   );
 
   if (!story) return <div className="panel"><h3>Личный дневник</h3><p className="desc">Загрузка...</p></div>;
-  const { current, chapterQuests, completed, allCount, chapters, gameCompleted } = story;
+  const { current, chapterQuests, completed, completedAll, allCount, chapters, gameCompleted } = story;
+  const doneList = completedAll || completed || [];
   const time = diary?.time;
 
   return (
@@ -85,6 +86,7 @@ export default function Diary({ act }) {
       <p className="desc">Сюжетные задания, мысли ГГ и справочник. {time ? <span>{time.text}{time.isNight ? " 🌙" : " ☀️"}</span> : null}</p>
       <div className="tabs">
         <button className={sub === "quests" ? "active" : ""} onClick={() => setSub("quests")}>📖 Сюжет ({completed?.length || 0}/{allCount || 0})</button>
+        <button className={sub === "completed" ? "active" : ""} onClick={() => setSub("completed")}>✅ Выполненные ({doneList.length})</button>
         <button className={sub === "thoughts" ? "active" : ""} onClick={() => setSub("thoughts")}>💭 Мысли ГГ</button>
         <button className={sub === "notes" ? "active" : ""} onClick={() => setSub("notes")}>📝 Заметки</button>
         <button className={sub === "ref" ? "active" : ""} onClick={() => setSub("ref")}>📚 Справочник</button>
@@ -103,13 +105,20 @@ export default function Diary({ act }) {
           {current ? (
             <>
               <h4>Глава {current.chapter}. {chapters?.find((c) => c.chapter === current.chapter)?.title || ""}</h4>
-              {(chapterQuests || []).map((q) => <QuestCard key={q.id} q={q} locked={!q.isCompleted && !q.isAccepted && q.order > (current.order || 0)} />)}
+              <p className="desc">Открыто только текущее задание. Следующее появится после выполнения.</p>
+              {(chapterQuests || []).map((q) => <QuestCard key={q.id} q={q} />)}
             </>
           ) : <div className="quest done"><b>🏁 Текущая сюжетная глава завершена</b><p>Проверьте задания торговцев (Диалог) и доску объявлений.</p></div>}
           <details><summary>Все главы</summary>
             <div className="chapter-list">{(chapters||[]).map(c=>(<div key={c.chapter} className={`chapter-row ${c.completed>=c.total?"done":""}`}><span className="chapter-num">{c.chapter}</span><div><b>{c.title}</b><span>{c.completed}/{c.total}</span></div></div>))}</div>
           </details>
-          <details><summary>Завершённые</summary>{(completed||[]).map(q=><QuestCard key={q.id} q={q} />)}</details>
+        </div>
+      )}
+
+      {sub === "completed" && (
+        <div className="quest-list">
+          <p className="desc">Все выполненные сюжетные задания и задания торговцев.</p>
+          {doneList.length === 0 ? <p className="desc">Пока нет выполненных заданий.</p> : doneList.map((q) => <QuestCard key={q.id} q={q} />)}
         </div>
       )}
 

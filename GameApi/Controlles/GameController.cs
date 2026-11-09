@@ -852,6 +852,24 @@ public class GameController : ControllerBase
         return prev == null || prev.IsCompleted;
     }
 
+    private List<Quest> VisibleTraderQuests(string traderId)
+    {
+        _state.RefreshDailies();
+        var open = _state.Quests
+            .Where(q => q.TraderId == traderId)
+            .Where(q => !q.IsCompleted || q.IsRepeatable)
+            .Where(q => !q.IsDaily || q.AvailableAt == null || q.AvailableAt <= DateTime.Now)
+            .Where(IsChainReady)
+            .OrderBy(q => q.Order)
+            .ToList();
+        // В цепочках показываем только первое открытое задание (принятое/доступное).
+        var active = open.FirstOrDefault(q => q.IsAccepted && !q.IsCompleted);
+        if (active != null) return new List<Quest> { active };
+        var first = open.FirstOrDefault(q => !q.IsCompleted);
+        if (first != null) return new List<Quest> { first };
+        return open.Where(q => q.IsRepeatable).Take(1).ToList();
+    }
+
     [HttpGet("quests")]
     public object GetQuests()
     {
@@ -860,20 +878,13 @@ public class GameController : ControllerBase
             .Where(q => q.IsRepeatable || !q.IsCompleted)
             .Where(q => !q.IsDaily || q.AvailableAt == null || q.AvailableAt <= DateTime.Now)
             .Where(IsChainReady)
+            .OrderBy(q => q.Order)
             .ToList();
         return new { quests = list };
     }
 
     [HttpGet("quests/trader/{traderId}")]
-    public object GetQuestsByTrader(string traderId)
-    {
-        _state.RefreshDailies();
-        var list = _state.Quests
-            .Where(q => q.TraderId == traderId && (q.IsRepeatable || !q.IsCompleted) && IsChainReady(q))
-            .Where(q => !q.IsDaily || q.AvailableAt == null || q.AvailableAt <= DateTime.Now)
-            .ToList();
-        return new { quests = list };
-    }
+    public object GetQuestsByTrader(string traderId) => new { quests = VisibleTraderQuests(traderId) };
 
     [HttpGet("story")]
     public object GetStory()
@@ -902,17 +913,18 @@ public class GameController : ControllerBase
             .ToList();
 
         var current = _questSvc.GetCurrentStory(_state.StoryQuests);
-        var chapterQuests = _state.StoryQuests
-            .Where(q => q.Chapter == (current?.Chapter ?? 0))
-            .OrderBy(q => q.Order)
-            .Where(q => q.IsCompleted || q.IsAccepted || (current != null && q.Id == current.Id))
-            .ToList();
+        // Показываем только первое открытое (текущее) задание главы.
+        var chapterQuests = current != null ? new List<Quest> { current } : new List<Quest>();
+
+        var completedStory = _state.StoryQuests.Where(q => q.IsCompleted).OrderBy(q => q.Chapter).ThenBy(q => q.Order).ToList();
+        var completedTrader = _state.Quests.Where(q => q.IsCompleted).OrderBy(q => q.TraderId).ThenBy(q => q.Order).ToList();
 
         return new
         {
             current,
             chapterQuests,
-            completed = _state.StoryQuests.Where(q => q.IsCompleted).OrderBy(q => q.Chapter).ThenBy(q => q.Order).ToList(),
+            completed = completedStory,
+            completedAll = completedStory.Concat(completedTrader).ToList(),
             allCount = _state.StoryQuests.Count,
             chapters,
             gameCompleted = _state.Player.GameCompleted,
@@ -1117,20 +1129,35 @@ public class GameController : ControllerBase
     public object GetBoard()
     {
         _state.ExpireUrgentQuests();
-        var unlocked = _state.Player.UnlockedLocations;
-        var traders = _state.Traders.ToDictionary(t => t.Id, t => t.Name);
+        var p = _state.Player;
+        var unlocked = p.UnlockedLocations;
+        var unlockedTraders = p.UnlockedTraders;
+        var traderNames = TraderDisplayNames();
         var list = _state.SideQuests
             .Where(q => !q.IsCompleted || q.IsRepeatable)
             .Where(q => string.IsNullOrEmpty(q.TargetLocationId) || unlocked.Contains(q.TargetLocationId))
+            .Where(q => string.IsNullOrEmpty(q.TraderId) || unlockedTraders.Contains(q.TraderId))
             .OrderByDescending(q => q.IsUrgent)
             .ThenBy(q => q.Order)
             .Select(q => {
-                q.TraderName = !string.IsNullOrEmpty(q.TraderId) && traders.TryGetValue(q.TraderId, out var tn) ? tn : null;
+                if (!string.IsNullOrEmpty(q.TraderId) && traderNames.TryGetValue(q.TraderId, out var tn)) q.TraderName = tn;
+                else if (!string.IsNullOrEmpty(q.TraderId)) q.TraderName = _state.Traders.FirstOrDefault(t => t.Id == q.TraderId)?.Name ?? q.TraderId;
+                else q.TraderName = null;
                 return q;
             })
             .ToList();
         return new { quests = list, time = _state.GetGameTimeInfo() };
     }
+
+    private static Dictionary<string, string> TraderDisplayNames() => new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["prapor"] = "Шматко",
+        ["therapist"] = "Медик",
+        ["ragman"] = "Сидорович",
+        ["blacksmith"] = "Гриша",
+        ["buyer"] = "Скупщик",
+        ["bartender"] = "Бармен",
+    };
 
     // --- Диалог торговца ---
     [HttpGet("traders/{traderId}/dialogue")]
@@ -1140,8 +1167,7 @@ public class GameController : ControllerBase
         if (t == null) return NotFound();
         var p = _state.Player;
         var unlocked = p.UnlockedTraders.Contains(traderId);
-        var traderQuests = _state.Quests.Where(q => q.TraderId == traderId)
-            .OrderBy(q => q.Order).ToList();
+        var traderQuests = VisibleTraderQuests(traderId);
         return Ok(new { trader = new { t.Id, t.Name, t.Description, t.Image, isUnlocked = unlocked }, dialogue = t.Dialogue, quests = traderQuests, time = _state.GetGameTimeInfo() });
     }
 

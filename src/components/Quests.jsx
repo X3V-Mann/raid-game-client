@@ -4,11 +4,11 @@ import { audio } from "../audio";
 import RubleIcon from "./RubleIcon";
 
 const TRADER_NAMES = {
-  prapor: "Прапор",
+  prapor: "Шматко",
   therapist: "Медик",
   bartender: "Бармен",
-  ragman: "Старьёвщик",
-  blacksmith: "Кузнец",
+  ragman: "Сидорович",
+  blacksmith: "Гриша",
   buyer: "Скупщик",
 };
 
@@ -67,7 +67,7 @@ export default function Quests({ story }) {
       )}
       <span className="quest-reward">
         Награда: {q.reward.money} <RubleIcon size={13} />
-        {q.reward.xp > 0 ? ` · ${q.reward.xp} XP` : ""}
+        {q.reward.xp > 0 ? ` · ${q.reward.xp} опыта` : ""}
         {(q.reward.items || []).map((i) => ` · ${i.name}`).join("")}
         {q.reward.unlockLocation ? " · 🔓 новая локация" : ""}
       </span>

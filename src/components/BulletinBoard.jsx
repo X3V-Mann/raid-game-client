@@ -52,7 +52,7 @@ export default function BulletinBoard({ act, onToast }) {
               {q.isAccepted && !q.isCompleted && (q.type === 0 || q.type === "Fetch") && (
                 <span>Нужно: {q.targetItemName || q.targetItemCode} ×{q.targetCount} (из рейда){dl ? ` · ⏱ ${dl}` : ""}</span>
               )}
-              <span className="quest-reward">Награда: {q.reward?.money || 0} <RubleIcon size={13} />{q.reward?.xp ? ` · ${q.reward.xp} XP` : ""}</span>
+              <span className="quest-reward">Награда: {q.reward?.money || 0} <RubleIcon size={13} />{q.reward?.xp ? ` · ${q.reward.xp} опыта` : ""}</span>
               <div>
                 {!q.isAccepted && !q.isCompleted && !expired && (
                   <button disabled={busy} onClick={() => doAction(() => api.acceptQuest(q.id))}>Принять</button>

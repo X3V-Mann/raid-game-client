@@ -253,7 +253,7 @@ class AudioManager {
       this.playMenu(true);
     } else {
       this.pauseMenu();
-      if (!this.cassette) this.playAmbient();
+      if (!this.cassette && !this.traderActive) this.playAmbient();
     }
   }
 
@@ -261,13 +261,14 @@ class AudioManager {
     if (scene === this.scene) return;
     this.scene = scene;
     if (scene === "menu") {
+      this.stopTraderMusic();
       this.stopCassette(false);
       this.pauseAmbient();
       this.playMenu(true);
     } else {
-      // Музыка меню — только в меню. В игре: эмбиент (кассета перекрывает).
+      // Музыка меню — только в меню. В игре: эмбиент (кассета/торговец перекрывает).
       this.pauseMenu();
-      if (!this.cassette) this.playAmbient();
+      if (!this.cassette && !this.traderActive) this.playAmbient();
     }
     this.notify();
   }
@@ -297,7 +298,7 @@ class AudioManager {
     this.cassette = null;
     this.cassetteAudio.pause();
     this.cassetteAudio.currentTime = 0;
-    if (resume && this.scene === "game") {
+    if (resume && this.scene === "game" && !this.traderActive) {
       // Возобновляем текущий эмбиент, если он был на паузе (кассета играла в убежище),
       // иначе запускаем следующий трек.
       if (this.ambientAudio.src && !this.ambientAudio.ended) {

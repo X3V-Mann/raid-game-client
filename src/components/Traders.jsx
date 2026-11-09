@@ -15,10 +15,14 @@ const TRADER_PORTRAITS = {
   bartender: { image: "/traders/barman.png", emoji: "🍺", label: "Бармен", sub: "Еда и напитки" },
 };
 
-// Названия вкладок могут отличаться от имени торговца внутри вкладки.
+// Названия вкладок торговцев (как на вкладках/в интерфейсе).
 const TRADER_TAB_LABELS = {
+  prapor: "Шматко",
   therapist: "Медик",
-  ragman: "Старьёвщик",
+  ragman: "Сидорович",
+  blacksmith: "Гриша",
+  buyer: "Скупщик",
+  bartender: "Бармен",
 };
 
 const BUYS_LABELS = {
@@ -730,7 +734,7 @@ export default function Traders({ player, act }) {
       {questsOpen && (
         <TraderDialogueModal
           traderId={t.id}
-          traderName={t.name}
+          traderName={TRADER_TAB_LABELS[t.id] || t.name}
           onClose={() => setQuestsOpen(false)}
           onUpdate={async () => { await act(() => Promise.resolve()); }}
         />

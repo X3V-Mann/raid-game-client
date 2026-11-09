@@ -524,7 +524,7 @@ export default function Combat({ initial, player, onUpdate, onClose, onDeath, on
                       <span>{enemy.icon || "🧟"}</span>
                     )
                   ) : enemy ? (
-                    <img src="/blocks/corpse.png" className="tile-img" alt="corpse" onError={(e) => { e.currentTarget.outerHTML = '<span>☠️</span>'; }} />
+                    <img src="/blocks/corpse.png" className="tile-img" alt="труп" onError={(e) => { e.currentTarget.outerHTML = '<span>☠️</span>'; }} />
                   ) : obj ? (
                     obj.sprite?.startsWith?.("/") || obj.kind === "exit" ? (
                       <img src={obj.sprite || "/blocks/exit.png"} className="tile-img" alt={obj.name} style={{ opacity: obj.looted ? 0.45 : 1 }} onError={(e) => { e.currentTarget.style.display = "none"; }} />
