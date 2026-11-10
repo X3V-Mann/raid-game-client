@@ -17,7 +17,7 @@ const TRADER_PORTRAITS = {
 
 // Названия вкладок торговцев (как на вкладках/в интерфейсе).
 const TRADER_TAB_LABELS = {
-  prapor: "Шматко",
+  prapor: "Прапор",
   therapist: "Медик",
   ragman: "Барахольщик",
   blacksmith: "Кузнец",
