@@ -56,18 +56,59 @@ public static class InventoryHelper
             RegisterCassette(p, item);
     }
 
-    /// <summary>Чинит названия предметов в старых сохранениях.</summary>
+    /// <summary>Чинит названия/поля предметов в старых сохранениях.</summary>
     public static void SyncLegacyNames(Player p)
     {
-        foreach (var item in p.Inventory.Concat(p.Shelter.Stash))
+        foreach (var item in AllItems(p))
         {
+            if (item == null) continue;
+
             if (item.Code == "ammo_bolt")
             {
                 item.Name = "Болты для арбалета";
                 if (string.IsNullOrWhiteSpace(item.Description) || item.Description == "Патроны bolt.")
                     item.Description = "Болты для арбалета.";
             }
+
+            // «Сфера» — костюм (слот одежды), а не бронежилет.
+            if (string.Equals(item.Code, "sphere", StringComparison.OrdinalIgnoreCase))
+            {
+                item.IsSuit = true;
+            }
+
+            if (string.Equals(item.Code, "helmet_exo", StringComparison.OrdinalIgnoreCase))
+            {
+                item.Description = "Кто додумался оторвать шлем от экзоскелета?";
+            }
+
+            if (string.Equals(item.Code, "watch", StringComparison.OrdinalIgnoreCase))
+            {
+                item.Name = "Настольные часы";
+                item.Description = "часы в форме двуглавого орла";
+            }
         }
+
+        // Если старая «Сфера» осталась экипированной в слот брони — переносим в слот костюма.
+        if (p.Armor != null && string.Equals(p.Armor.Code, "sphere", StringComparison.OrdinalIgnoreCase))
+        {
+            var oldSuit = p.Suit;
+            p.Suit = p.Armor;
+            p.Armor = null;
+            if (oldSuit != null)
+                AddToInventory(p, oldSuit);
+        }
+    }
+
+    private static IEnumerable<Item?> AllItems(Player p)
+    {
+        foreach (var i in p.Inventory) yield return i;
+        foreach (var i in p.Shelter?.Stash ?? Enumerable.Empty<Item>()) yield return i;
+        yield return p.WeaponMelee;
+        yield return p.WeaponRanged;
+        yield return p.Helmet;
+        yield return p.Armor;
+        yield return p.Suit;
+        yield return p.Backpack;
     }
 
     public static bool RemoveFromInventory(Player p, string itemId, int count = 1)

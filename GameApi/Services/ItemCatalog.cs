@@ -21,7 +21,7 @@ public class ItemCatalog
         T("helmet_ssh", "Каска СШ-68", ItemType.Helmet, Rarity.Uncommon, 250, def: 4, icon: "/items/clothing/helmet_ssh.png", desc: "Старая добрая сталь. Лучше, чем ничего.", slowdown: 0, blastProtection: 8, bulletProtection: 16, physicalProtection: 8),
         T("helmet_tactical", "Тактический шлем", ItemType.Helmet, Rarity.Uncommon, 700, def: 6, icon: MissingIcon, desc: "Лёгкий, с креплениями под ПНВ и гарнитуру.", slowdown: 0, blastProtection: 12, bulletProtection: 24, physicalProtection: 12),
         T("helmet_altyn", "Шлем «Алтын»", ItemType.Helmet, Rarity.Rare, 1200, def: 8, icon: "/items/clothing/helmet_altyn.png", desc: "Тяжёлый штурмовой шлем.", slowdown: 3, blastProtection: 24, bulletProtection: 42, physicalProtection: 16),
-        T("helmet_exo", "Шлем экзоскелета", ItemType.Helmet, Rarity.Epic, 2500, def: 12, icon: MissingIcon, desc: "Герметичный купол с забралом.", slowdown: 3, blastProtection: 32, bulletProtection: 58, physicalProtection: 24),
+        T("helmet_exo", "Шлем экзоскелета", ItemType.Helmet, Rarity.Epic, 2500, def: 12, icon: MissingIcon, desc: "Кто додумался оторвать шлем от экзоскелета?", slowdown: 3, blastProtection: 32, bulletProtection: 58, physicalProtection: 24),
 
         // === Броня ===
         T("jacket", "Кожаная куртка", ItemType.Armor, Rarity.Common, 80, def: 2, icon: "/items/clothing/jacket.png", desc: "Держит холод и мелкие неприятности.", isSuit: true, slowdown: 0, blastProtection: 4, bulletProtection: 4, physicalProtection: 6),
@@ -29,7 +29,7 @@ public class ItemCatalog
         T("vest", "Бронежилет", ItemType.Armor, Rarity.Uncommon, 700, def: 7, icon: "/items/clothing/vest.png", desc: "Базовый бронежилет. Универсальная защита.", slowdown: 1, blastProtection: 14, bulletProtection: 29, physicalProtection: 17),
         T("combat_suit", "Штурмовой комбез", ItemType.Armor, Rarity.Rare, 900, def: 9, icon: MissingIcon, desc: "Комбинезон с бронепластинами.", isSuit: true, slowdown: 1, blastProtection: 18, bulletProtection: 18, physicalProtection: 27),
         T("vest_heavy", "Тяжёлый бронежилет", ItemType.Armor, Rarity.Epic, 3200, def: 14, icon: "/items/clothing/vest_heavy.png", desc: "Много керамики и ещё больше веса.", slowdown: 3, blastProtection: 36, bulletProtection: 60, physicalProtection: 31),
-        T("sphere", "Броня «Сфера»", ItemType.Armor, Rarity.Epic, 2600, def: 16, icon: MissingIcon, desc: "Экспериментальная разработка.", slowdown: 4, blastProtection: 40, bulletProtection: 66, physicalProtection: 35),
+        T("sphere", "Броня «Сфера»", ItemType.Armor, Rarity.Epic, 2600, def: 16, icon: MissingIcon, desc: "Экспериментальная разработка.", isSuit: true, slowdown: 4, blastProtection: 40, bulletProtection: 66, physicalProtection: 35),
         T("exo", "Экзоскелет", ItemType.Armor, Rarity.Legendary, 6000, def: 24, icon: MissingIcon, desc: "Рама, сервоприводы и броня.", slowdown: 4, blastProtection: 56, bulletProtection: 90, physicalProtection: 51),
 
         // === Рюкзаки ===
@@ -199,7 +199,7 @@ public class ItemCatalog
         T("textolite", "Текстолит", ItemType.Material, Rarity.Rare, 110, icon: "/items/resources/Текстолит.png", desc: "Лист текстолита для плат."),
 
         // === Ценности / бартер ===
-        T("watch", "Наручные часы", ItemType.Misc, Rarity.Rare, 300, icon: "/items/other/watch.png", desc: "Механические наручные часы."),
+        T("watch", "Настольные часы", ItemType.Misc, Rarity.Rare, 300, icon: "/items/other/watch.png", desc: "часы в форме двуглавого орла"),
         T("amber", "Янтарь", ItemType.Misc, Rarity.Rare, 500, icon: MissingIcon, desc: "Кусок янтаря."),
         T("goldchain", "Золотая цепь", ItemType.Misc, Rarity.Epic, 900, icon: "/items/other/goldchain.png", desc: "Тяжёлая цепь."),
         T("icon", "Икона", ItemType.Misc, Rarity.Epic, 700, icon: MissingIcon, desc: "Старая икона в окладе."),

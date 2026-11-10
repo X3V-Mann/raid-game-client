@@ -48,6 +48,7 @@ export const api = {
     req("/sell-partial", { method: "POST", body: { itemId, count, traderId } }),
   drop: (id) => req(`/inventory/drop/${id}`, { method: "POST" }),
   addItems: (items) => req("/inventory/add", { method: "POST", body: { items } }),
+  sortInventory: () => req("/inventory/sort", { method: "POST" }),
 
   // --- Торговцы ---
   getTraders: () => req("/traders"),
@@ -102,6 +103,7 @@ export const api = {
     req("/raid/loot-furniture", { method: "POST", body: { buildingId, furnitureId } }),
   npcTalk: (npcId) => req("/raid/npc/talk", { method: "POST", body: { npcId } }),
   npcBuy: (npcId, code, count = 1) => req("/raid/npc/buy", { method: "POST", body: { npcId, code, count } }),
+  npcSell: (npcId, itemId, count = 1) => req("/raid/npc/sell", { method: "POST", body: { npcId, itemId, count } }),
   exitRaid: () => req("/raid/exit", { method: "POST" }),
   abandonRaid: () => req("/raid/abandon", { method: "POST" }),
   combatAction: (action, enemyId, itemId, targetX, targetY) =>

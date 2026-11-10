@@ -73,7 +73,7 @@ export default function Inventory({ player, act, onClose }) {
   const [selected, setSelected] = useState(null);
 
   const capacity = player.inventoryCapacity || 12;
-  const cells = [...player.inventory];
+  const cells = [...(player.inventory || [])];
   while (cells.length < capacity) cells.push(null);
 
   const currentWeight = player.currentWeight ?? 0;
@@ -141,8 +141,16 @@ export default function Inventory({ player, act, onClose }) {
 
   return (
     <div className="modal-bg" onClick={onClose}>
-      <div className="stalker-inventory" onClick={(e) => e.stopPropagation()}>
-        <div className="stalker-inv-head">
+      <div className="stalker-inventory" onClick={(e) => e.stopPropagation()} style={{ position: "relative" }}>
+        <button
+          className="close-btn"
+          onClick={onClose}
+          title="Закрыть"
+          style={{ position: "absolute", top: 8, right: 8, zIndex: 5 }}
+        >
+          ✖
+        </button>
+        <div className="stalker-inv-head" style={{ paddingRight: 46 }}>
           <div className="stalker-title">РЮКЗАК</div>
 
           <div className="weight-block">
@@ -156,7 +164,6 @@ export default function Inventory({ player, act, onClose }) {
           </div>
 
           <div className="stalker-money"><RubleIcon size={15} /> {player.money}</div>
-          <button className="close-btn" onClick={onClose}>✖</button>
         </div>
 
         <div className="stalker-inv-body">
@@ -182,9 +189,16 @@ export default function Inventory({ player, act, onClose }) {
           </aside>
 
           <section className="stalker-grid-col">
-            <div className="stalker-section-head">
+            <div className="stalker-section-head" style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span>ИНВЕНТАРЬ</span>
-              <span>{player.inventory.length}/{capacity}</span>
+              <span style={{ marginLeft: "auto" }}>{player.inventory.length}/{capacity}</span>
+              <button
+                onClick={() => act(() => api.sortInventory())}
+                title="Отсортировать инвентарь по категории (порядок сохранится)"
+                style={{ fontSize: 12 }}
+              >
+                Сортировать по категории
+              </button>
             </div>
 
             <div className="stalker-grid">

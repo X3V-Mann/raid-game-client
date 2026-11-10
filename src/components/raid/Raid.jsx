@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import Combat from "./Combat";
 import RaidFeed from "./RaidFeed";
+import RaidNpcDialogue from "./RaidNpcDialogue";
 import { AVATARS } from "../../avatars";
 import RubleIcon from "../RubleIcon";
 
@@ -29,10 +30,32 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
   const [combat, setCombat] = useState(null);
   const [selected, setSelected] = useState(null);
   const [selectedNpc, setSelectedNpc] = useState(null);
+  const [activeQuests, setActiveQuests] = useState([]);
   const [busy, setBusy] = useState(false);
   const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(true);
   const busyRef = useRef(false);
+
+  const loadActiveQuests = useCallback(async () => {
+    try {
+      const [story, trader] = await Promise.all([
+        api.getStory().catch(() => null),
+        api.getQuests().catch(() => null),
+      ]);
+      const list = [];
+      const push = (q) => {
+        if (!q) return;
+        if (q.isAccepted && !q.isCompleted && !q.isFailed) list.push(q);
+      };
+      (story?.chapterQuests || []).forEach(push);
+      if (story?.current) push(story.current);
+      (trader?.quests || []).forEach(push);
+      const seen = new Set();
+      setActiveQuests(list.filter((q) => q?.id && !seen.has(q.id) && seen.add(q.id)));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const apply = useCallback(
     (res) => {
@@ -70,6 +93,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
 
   useEffect(() => {
     load();
+    loadActiveQuests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -114,13 +138,14 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
 
   const adjacentToNpc = (n) => !!n && Math.abs(n.x - playerX) <= 1 && Math.abs(n.y - playerY) <= 1 && !(n.x === playerX && n.y === playerY);
 
-  const run = async (fn) => {
+  const run = async (fn, { refreshQuests = false } = {}) => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     try {
       const res = await fn();
       apply(res);
+      if (refreshQuests) loadActiveQuests();
       return res;
     } catch (e) {
       onToast?.(e.message || "Ошибка действия");
@@ -436,7 +461,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                     className={classes}
                     onClick={() => onTileClick(tile)}
                     title={
-                      npc ? `💬 ${npc.name}${npc.scripted?" (сюжетный)":""}${npc.canTrade?" · торгует":""} — подойдите и нажмите`
+                      npc ? `💬 ${npc.name}${npc.canTrade?" · торгует":""} — подойдите и нажмите`
                       : mutant
                         ? `🐺 ${mutant.name} · видит на ${mutant.visionRadius ?? 3} клетки · здания и деревья закрывают обзор`
                         : b
@@ -459,7 +484,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
                     }
                     style={{ width: 34, height: 34, position: npc || (tile.type==="ground"&&npcAt(tile.x,tile.y)) ? "relative" : undefined }}
                   >
-                    {isYou ? <img src={avatarSrcFor(player)} className="tile-avatar" alt="ГГ" /> : mutant ? <img src={mutant.icon} className="tile-enemy-img tile-mutant-img" alt={mutant.name} /> : npc ? <img src={npc.icon} className="tile-img" alt={npc.name} style={{borderRadius:"50%", border: npc.scripted?"2px solid #ffd54a":"2px solid #7ecfff"}} onError={(e)=>{e.currentTarget.style.display="none";}} /> : bAnchor ? (String(b.icon).startsWith("/") ? <img src={b.icon} className="tile-img" alt={b.name} onError={(e)=>{e.currentTarget.style.display="none";}} /> : b.icon) : tile.type === "car" ? <img src="/blocks/car.png" className="tile-img" alt="машина" /> : tile.type === "tree" ? <img src="/blocks/tree.png" className="tile-img" alt="дерево" /> : tile.type === "stash" ? <img src="/blocks/stash.png" className="tile-img" alt="тайник" /> : tile.type === "exit" ? <img src="/blocks/exit.png" className="tile-img" alt="выход" /> : tile.type === "transition" ? "➜" : TILE_ICON[tile.type] || ""}
+                    {isYou ? <img src={avatarSrcFor(player)} className="tile-avatar" alt="ГГ" /> : mutant ? <img src={mutant.icon} className="tile-enemy-img tile-mutant-img" alt={mutant.name} /> : npc ? <img src={npc.icon} className="tile-img" alt={npc.name} style={{borderRadius:"50%", border:"2px solid #7ecfff"}} onError={(e)=>{e.currentTarget.style.display="none";}} /> : bAnchor ? (String(b.icon).startsWith("/") ? <img src={b.icon} className="tile-img" alt={b.name} onError={(e)=>{e.currentTarget.style.display="none";}} /> : b.icon) : tile.type === "car" ? <img src="/blocks/car.png" className="tile-img" alt="машина" /> : tile.type === "tree" ? <img src="/blocks/tree.png" className="tile-img" alt="дерево" /> : tile.type === "stash" ? <img src="/blocks/stash.png" className="tile-img" alt="тайник" /> : tile.type === "exit" ? <img src="/blocks/exit.png" className="tile-img" alt="выход" /> : tile.type === "transition" ? "➜" : TILE_ICON[tile.type] || ""}
                   </div>
                 );
               })}
@@ -474,23 +499,30 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
           {selectedNpc && (() => {
             const npc = (raid.npcs||[]).find(n=>n.id===selectedNpc);
             if (!npc) return null;
-            const adj = Math.abs(npc.x-playerX)<=1 && Math.abs(npc.y-playerY)<=1 && !(npc.x===playerX&&npc.y===playerY);
+            const adj = adjacentToNpc(npc);
+            if (!adj) {
+              return (
+                <div className="raid-building-card far">
+                  <div className="raid-building-head">
+                    <span className="raid-building-icon"><img src={npc.icon} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:"50%"}} onError={(e)=>{e.currentTarget.style.display="none";}} /></span>
+                    <div><b>{npc.name}</b><small>{npc.canTrade?"Может поторговать":"Нейтральный персонаж"}</small></div>
+                    <button className="close-btn" onClick={()=>setSelectedNpc(null)} style={{marginLeft:"auto"}}>✖</button>
+                  </div>
+                  <span className="raid-hint">Подойдите к персонажу ближе, чтобы поговорить.</span>
+                </div>
+              );
+            }
             return (
-              <div className={`raid-building-card ${adj ? "" : "far"}`}>
-                <div className="raid-building-head">
-                  <span className="raid-building-icon"><img src={npc.icon} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:"50%"}} onError={(e)=>{e.currentTarget.style.display="none";}} /></span>
-                  <div><b>{npc.name}{npc.scripted?" (сюжетный)":""}</b><small>{npc.canTrade?"Может поторговать":"Нейтральный персонаж"}</small></div>
-                  <button className="close-btn" onClick={()=>setSelectedNpc(null)} style={{marginLeft:"auto"}}>✖</button>
-                </div>
-                <div className="raid-building-desc">{(npc.dialogue||[]).slice(0,3).map((l,i)=><div key={i}>«{l}»</div>)}</div>
-                <div className="raid-building-actions" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <button className="btn-next" disabled={busy||!adj} onClick={()=>run(()=>api.npcTalk(npc.id))}>💬 Поговорить</button>
-                  {npc.canTrade && (npc.tradeCodes||[]).slice(0,4).map(code=>(
-                    <button key={code} disabled={busy||!adj} onClick={()=>run(()=>api.npcBuy(npc.id, code, 1))}>Купить: {code}</button>
-                  ))}
-                </div>
-                {!adj && <span className="raid-hint">Подойдите к персонажу ближе.</span>}
-              </div>
+              <RaidNpcDialogue
+                npc={npc}
+                player={player}
+                onClose={() => setSelectedNpc(null)}
+                onToast={onToast}
+                onAction={(res) => {
+                  if (res) apply(res);
+                  loadActiveQuests();
+                }}
+              />
             );
           })()}
 
@@ -564,7 +596,7 @@ export default function Raid({ player, location, onExit, onToast, onPlayerChange
           </div>
         </div>
 
-        <RaidFeed events={feed} />
+        <RaidFeed events={feed} quests={activeQuests} />
       </div>
 
       {combat && (

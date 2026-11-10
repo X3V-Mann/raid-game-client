@@ -349,6 +349,36 @@ public class GameController : ControllerBase
         return p;
     }
 
+    [HttpPost("inventory/sort")]
+    public Player SortInventory()
+    {
+        var p = _state.Player;
+        p.Inventory = p.Inventory
+            .OrderBy(i => InventorySortOrder(i.Type))
+            .ThenBy(i => i.Name ?? "", StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        _state.Persist();
+        return p;
+    }
+
+    private static int InventorySortOrder(ItemType type) => type switch
+    {
+        ItemType.WeaponMelee => 1,
+        ItemType.WeaponRanged => 2,
+        ItemType.Helmet => 3,
+        ItemType.Armor => 4,
+        ItemType.Backpack => 5,
+        ItemType.Ammo => 6,
+        ItemType.Medicine => 7,
+        ItemType.Food => 8,
+        ItemType.Drink => 9,
+        ItemType.Material => 10,
+        ItemType.Misc => 11,
+        ItemType.Cassette => 12,
+        ItemType.Stash => 13,
+        _ => 99,
+    };
+
     [HttpPost("inventory/drop/{itemId}")]
     public IActionResult DropItem(string itemId)
     {

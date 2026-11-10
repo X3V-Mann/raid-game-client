@@ -311,4 +311,6 @@ public class RaidActionResult
     public bool CombatFinished { get; set; }
     public bool RaidFinished { get; set; }
     public string? Message { get; set; }
+    /// <summary>Реплика NPC в диалоге рейда.</summary>
+    public string? NpcReply { get; set; }
 }

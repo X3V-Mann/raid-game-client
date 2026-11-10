@@ -2332,23 +2332,6 @@
       "ammoPerShot": 1
     },
     {
-      "name": "Barrett M82",
-      "weaponClass": "SniperRifle",
-      "caliber": ".50 BMG",
-      "magazineCapacity": 10,
-      "allowedFireModes": [
-        "Single"
-      ],
-      "aimedShotAllowed": true,
-      "burstAllowed": false,
-      "damage": 95,
-      "rangeEffective": 800,
-      "rangeMax": 2000,
-      "rpm": 40,
-      "roundsPerBurst": 0,
-      "ammoPerShot": 1
-    },
-    {
       "name": "Glock 17",
       "weaponClass": "Pistol",
       "caliber": "9x19mm",

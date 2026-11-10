@@ -178,16 +178,16 @@ public class QuestService
         Chain("buyer", new (string id,string t,string d,string icon,QuestType qt,int cnt,string? code,string? iname,string? loc,string? ln,bool boss,int money,int xp,string? ul,string? ut,string? note)[]{
             ("buyer_1","Честный обмен","Принеси Скупщику лом — проверим, что ты живой.",IcoMats,QuestType.Fetch,3,"scrap","Металлолом",null,null,false,80,30,null,null,null),
             ("buyer_2","Глаза и уши","Побывай на Кордоне и вернись.",IcoGo,QuestType.ExtractAlive,1,null,null,"kordon","Кордон",false,120,50,null,null,null),
-            ("buyer_3","Редкая безделушка","Принеси часы (из рейда).",IcoItem,QuestType.Fetch,1,"watch","Наручные часы",null,null,false,200,70,null,null,null),
+            ("buyer_3","Редкая безделушка","Принеси часы (из рейда).",IcoItem,QuestType.Fetch,1,"watch","Настольные часы",null,null,false,200,70,null,null,null),
             ("buyer_4","Наводка","Принеси записи выжившего — Скупщик кое-что вспомнит.",IcoNotes,QuestType.Fetch,1,"quest_notes","Записи выжившего",null,null,false,250,90,null,"prapor","Скупщик кивает: «Прапор тебя ждёт»."),
             ("buyer_5","Деловые связи","Убей 5 врагов в Городе.",IcoKillHuman,QuestType.Kill,5,null,null,"city","Город",false,220,80,null,null,null),
             ("buyer_6","Ценный груз","Принеси документы.",IcoDocs,QuestType.Fetch,1,"documents","Документы",null,null,false,300,100,null,null,null),
             ("buyer_7","Слухи об Окраинах","Побывай на Военной базе.",IcoGo,QuestType.VisitLocation,1,null,null,"military","Военная база",false,280,100,null,null,null),
-            ("buyer_8","Последняя услуга","Принеси артефакт (любой ценный предмет: золотую цепь).",IcoArt,QuestType.Fetch,1,"goldchain","Золотая цепь",null,null,false,500,150,null,null,null),
+            ("buyer_8","Последняя услуга","Принеси золотую цепь (из рейда).",IcoArt,QuestType.Fetch,1,"goldchain","Золотая цепь",null,null,false,500,150,null,null,null),
         });
 
         Chain("bartender", new (string id,string t,string d,string icon,QuestType qt,int cnt,string? code,string? iname,string? loc,string? ln,bool boss,int money,int xp,string? ul,string? ut,string? note)[]{
-            ("bartender_1","Для своих","Принеси воду и еду.",IcoItem,QuestType.Fetch,2,"water","Вода",null,null,false,70,25,null,null,null),
+            ("bartender_1","Для своих","Принеси воду ×2 (из рейда).",IcoItem,QuestType.Fetch,2,"water","Вода",null,null,false,70,25,null,null,null),
             ("bartender_2","Разговор по душам","Выйди живым из Города.",IcoGo,QuestType.ExtractAlive,1,null,null,"city","Город",false,100,40,null,null,"Бармен: «Вспоминай осторожно. Тут за память убивают»."),
             ("bartender_3","Охота на мутантов","Принеси части мутантов (сало плоти).",IcoMats,QuestType.Fetch,2,"flesh_fat","Сало плоти",null,null,false,160,60,null,null,null),
             ("bartender_4","Чистка Кордона","Убей 4 мутантов на Кордоне.",IcoKillMut,QuestType.Kill,4,null,null,"kordon","Кордон",false,180,70,null,null,null),
@@ -200,22 +200,22 @@ public class QuestService
 
         Chain("prapor", new (string id,string t,string d,string icon,QuestType qt,int cnt,string? code,string? iname,string? loc,string? ln,bool boss,int money,int xp,string? ul,string? ut,string? note)[]{
             ("prapor_1","Проверка бойца","Убей 3 врагов в Городе.",IcoKillHuman,QuestType.Kill,3,null,null,"city","Город",false,120,50,null,null,null),
-            ("prapor_2","Металл для дела","Принеси металлолом и провода.",IcoMats,QuestType.Fetch,4,"scrap","Металлолом",null,null,false,150,60,null,null,null),
+            ("prapor_2","Металл для дела","Принеси металлолом ×4 (из рейда).",IcoMats,QuestType.Fetch,4,"scrap","Металлолом",null,null,false,150,60,null,null,null),
             ("prapor_3","Разведка Кордона","Выйди живым с Кордона.",IcoGo,QuestType.ExtractAlive,1,null,null,"kordon","Кордон",false,180,70,null,null,null),
             ("prapor_4","Оружейник","Принеси инструменты (плоскогубцы).",IcoTools,QuestType.Fetch,1,"pliers","Плоскогубцы",null,null,false,220,80,null,"blacksmith",null),
             ("prapor_5","Зачистка","Убей 6 врагов на Заводе.",IcoKillHuman,QuestType.Kill,6,null,null,"factory","Завод",false,320,120,null,null,null),
             ("prapor_6","Босс Завода","Убей босса на Заводе.",IcoKillHuman,QuestType.KillBoss,1,null,null,"factory","Завод",true,500,200,null,null,null),
-            ("prapor_7","Тяжёлый металл","Принеси болты и гайки.",IcoMats,QuestType.Fetch,8,"bolts","Болты",null,null,false,240,90,null,null,null),
+            ("prapor_7","Тяжёлый металл","Принеси болты ×8 (из рейда).",IcoMats,QuestType.Fetch,8,"bolts","Болты",null,null,false,240,90,null,null,null),
             ("prapor_8","Контроль ТЦ","Побывай в Торговом центре.",IcoGo,QuestType.VisitLocation,1,null,null,"mall","Торговый центр",false,260,100,null,null,null),
         });
 
         Chain("blacksmith", new (string id,string t,string d,string icon,QuestType qt,int cnt,string? code,string? iname,string? loc,string? ln,bool boss,int money,int xp,string? ul,string? ut,string? note)[]{
             ("blacksmith_1","Сырьё","Принеси металлолом.",IcoMats,QuestType.Fetch,5,"scrap","Металлолом",null,null,false,100,40,null,null,null),
-            ("blacksmith_2","Электрика","Принеси провода и батарейку.",IcoMats,QuestType.Fetch,3,"wire","Провода",null,null,false,140,55,null,null,null),
-            ("blacksmith_3","Пайка","Принеси канифоль и резисторы.",IcoMats,QuestType.Fetch,2,"rosin","Канифоль",null,null,false,200,75,null,"therapist",null),
+            ("blacksmith_2","Электрика","Принеси провода ×3 (из рейда).",IcoMats,QuestType.Fetch,3,"wire","Провода",null,null,false,140,55,null,null,null),
+            ("blacksmith_3","Пайка","Принеси канифоль ×2 (из рейда).",IcoMats,QuestType.Fetch,2,"rosin","Канифоль",null,null,false,200,75,null,"therapist",null),
             ("blacksmith_4","Лесные ресурсы","Выйди живым из Леса.",IcoGo,QuestType.ExtractAlive,1,null,null,"forest","Лес",false,260,100,null,null,null),
-            ("blacksmith_5","Платы","Принеси текстолит и конденсаторы.",IcoMats,QuestType.Fetch,2,"textolite","Текстолит",null,null,false,300,110,null,"ragman",null),
-            ("blacksmith_6","Крепёж","Принеси гайки и болты (из рейда).",IcoMats,QuestType.Fetch,6,"nuts","Гайки",null,null,false,220,85,null,null,null),
+            ("blacksmith_5","Платы","Принеси текстолит ×2 (из рейда).",IcoMats,QuestType.Fetch,2,"textolite","Текстолит",null,null,false,300,110,null,"ragman",null),
+            ("blacksmith_6","Крепёж","Принеси гайки ×6 (из рейда).",IcoMats,QuestType.Fetch,6,"nuts","Гайки",null,null,false,220,85,null,null,null),
             ("blacksmith_7","Ночной заказ","Принеси электронику ночью (любой рейд ночью) — убей 1 врага ночью.",IcoKillHuman,QuestType.Kill,1,null,null,null,null,false,280,100,null,null,null),
             ("blacksmith_8","Мастер","Принеси набор инструментов.",IcoTools,QuestType.Fetch,1,"toolkit","Набор инструментов",null,null,false,400,140,null,null,null),
         });
@@ -235,7 +235,7 @@ public class QuestService
             ("ragman_1","Тряпьё","Принеси ткань.",IcoMats,QuestType.Fetch,5,"cloth","Ткань",null,null,false,90,35,null,null,null),
             ("ragman_2","Пошив","Принеси флисовую ткань.",IcoMats,QuestType.Fetch,3,"fleece_fabric","Флисовая ткань",null,null,false,180,65,null,null,null),
             ("ragman_3","Выход в город","Выйди живым из Города.",IcoGo,QuestType.ExtractAlive,1,null,null,"city","Город",false,150,55,null,null,null),
-            ("ragman_4","Броня","Принеси резину и скотч.",IcoMats,QuestType.Fetch,4,"rubber","Резина",null,null,false,200,75,null,null,null),
+            ("ragman_4","Броня","Принеси резину ×4 (из рейда).",IcoMats,QuestType.Fetch,4,"rubber","Резина",null,null,false,200,75,null,null,null),
             ("ragman_5","Склад в ТЦ","Зайди в здание в Торговом центре.",IcoScout,QuestType.EnterBuilding,1,null,null,"mall","Торговый центр",false,240,90,null,null,null),
             ("ragman_6","Трофеи","Убей 6 врагов в Торговом центре.",IcoKillHuman,QuestType.Kill,6,null,null,"mall","Торговый центр",false,340,125,null,null,null),
             ("ragman_7","Походный набор","Принеси паракорд.",IcoMats,QuestType.Fetch,3,"paracord","Паракорд",null,null,false,220,85,null,null,null),

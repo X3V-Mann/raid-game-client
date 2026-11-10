@@ -508,6 +508,7 @@ public class RaidController : ControllerBase
 
     public record NpcTalkDto(string NpcId);
     public record NpcBuyDto(string NpcId, string Code, int Count = 1);
+    public record NpcSellDto(string NpcId, string ItemId, int Count = 1);
 
     [HttpPost("npc/talk")]
     public ActionResult<RaidActionResult> TalkNpc([FromBody] NpcTalkDto dto)
@@ -523,14 +524,26 @@ public class RaidController : ControllerBase
 
         npc.Talked = true;
         var given = new List<Item>();
-        // Выдача квестового предмета
+
+        bool questActive = IsNpcQuestActive(npc);
+        bool questRelated = npc.Scripted && (!string.IsNullOrEmpty(npc.RequiresQuestId) || !string.IsNullOrEmpty(npc.GivesItemCode));
+
+        // Выдача квестового предмета — только когда задание активно/нужно
         if (!npc.GaveItem && !string.IsNullOrEmpty(npc.GivesItemCode))
         {
-            bool okToGive = string.IsNullOrEmpty(npc.RequiresQuestId)
-                || _state.AllQuests().Any(q => q.Id == npc.RequiresQuestId && q.IsAccepted && !q.IsCompleted);
-            // Также разрешим, если есть активный Fetch на этот предмет
-            if (!okToGive) okToGive = _state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && q.Type == QuestType.Fetch
-                && string.Equals(q.TargetItemCode, npc.GivesItemCode, StringComparison.OrdinalIgnoreCase));
+            bool okToGive = false;
+            if (string.IsNullOrEmpty(npc.RequiresQuestId))
+            {
+                okToGive = _state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Fetch
+                    && string.Equals(q.TargetItemCode, npc.GivesItemCode, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                okToGive = _state.AllQuests().Any(q => q.Id == npc.RequiresQuestId && q.IsAccepted && !q.IsCompleted && !q.IsFailed);
+                if (!okToGive) okToGive = _state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Fetch
+                    && string.Equals(q.TargetItemCode, npc.GivesItemCode, StringComparison.OrdinalIgnoreCase));
+            }
+
             if (okToGive)
             {
                 var item = _catalog.Create(npc.GivesItemCode);
@@ -544,26 +557,72 @@ public class RaidController : ControllerBase
                 else AddLog(raid, "🎒 Инвентарь полон — NPC не смог передать предмет.");
             }
         }
-        else if (!npc.GaveItem && npc.GivesItemCode == null)
+
+        // Прогресс Talk-квестов — только когда задание активно (для квестовых NPC)
+        bool canProgressTalk = !questRelated || questActive;
+        if (canProgressTalk)
         {
-            AddLog(raid, $"💬 {npc.Name}: {(npc.Dialogue.Count > 0 ? npc.Dialogue[_rng.Next(npc.Dialogue.Count)] : "...")}");
-        }
-        else
-        {
-            AddLog(raid, $"💬 {npc.Name}: {(npc.Dialogue.Count > 0 ? npc.Dialogue[0] : "Рад видеть.")}");
+            foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Talk))
+            {
+                if (!string.IsNullOrEmpty(q.TargetNpcName) && npc.Name.Contains(q.TargetNpcName, StringComparison.OrdinalIgnoreCase))
+                    q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+                if (!string.IsNullOrEmpty(npc.RequiresQuestId) && string.Equals(q.Id, npc.RequiresQuestId, StringComparison.OrdinalIgnoreCase))
+                    q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
+            }
         }
 
-        // Прогресс Talk-квестов по имени NPC
-        foreach (var q in _state.AllQuests().Where(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Talk))
-        {
-            if (!string.IsNullOrEmpty(q.TargetNpcName) && npc.Name.Contains(q.TargetNpcName, StringComparison.OrdinalIgnoreCase))
-                q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
-            // если квест привязан к RequiresQuestId этого NPC
-            if (!string.IsNullOrEmpty(npc.RequiresQuestId) && string.Equals(q.Id, npc.RequiresQuestId, StringComparison.OrdinalIgnoreCase))
-                q.Progress = Math.Max(q.Progress, q.TargetCount <= 0 ? 1 : q.TargetCount);
-        }
+        string reply;
+        if (given.Count > 0)
+            reply = $"Держи, это тебе пригодится. {npc.Name} передал: {given[0].Name}.";
+        else if (questRelated && !questActive)
+            reply = GenericNpcReply();
+        else if (npc.Dialogue.Count > 0)
+            reply = npc.Dialogue[_rng.Next(npc.Dialogue.Count)];
+        else
+            reply = GenericNpcReply();
+
+        AddLog(raid, $"💬 {npc.Name}: {reply}");
         _state.Persist();
-        return new RaidActionResult { Raid = raid, Player = p, DroppedLoot = given, Message = given.Count > 0 ? $"{npc.Name} передал предмет." : $"Разговор: {npc.Name}." };
+        return new RaidActionResult
+        {
+            Raid = raid,
+            Player = p,
+            DroppedLoot = given,
+            Message = given.Count > 0 ? $"{npc.Name} передал предмет." : $"Разговор: {npc.Name}.",
+            NpcReply = reply,
+        };
+    }
+
+    private bool IsNpcQuestActive(RaidNpc npc)
+    {
+        if (!string.IsNullOrEmpty(npc.RequiresQuestId))
+        {
+            if (_state.AllQuests().Any(q => q.Id == npc.RequiresQuestId && q.IsAccepted && !q.IsCompleted && !q.IsFailed))
+                return true;
+        }
+        if (!string.IsNullOrEmpty(npc.GivesItemCode))
+        {
+            if (_state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Fetch
+                && string.Equals(q.TargetItemCode, npc.GivesItemCode, StringComparison.OrdinalIgnoreCase)))
+                return true;
+        }
+        // Talk-квесты по имени NPC
+        if (npc.Scripted && _state.AllQuests().Any(q => q.IsAccepted && !q.IsCompleted && !q.IsFailed && q.Type == QuestType.Talk
+            && !string.IsNullOrEmpty(q.TargetNpcName) && npc.Name.Contains(q.TargetNpcName, StringComparison.OrdinalIgnoreCase)))
+            return true;
+        return false;
+    }
+
+    private string GenericNpcReply()
+    {
+        string[] replies = {
+            "Да как все... выживаем понемногу.",
+            "Тихо пока. Не хотелось бы шума лишнего.",
+            "Осматриваюсь, хожу тут. Бывай осторожнее.",
+            "Бывало и хуже. Главное — патроны целы и голова на месте.",
+            "Ничего нового. Зона как Зона.",
+        };
+        return replies[_rng.Next(replies.Length)];
     }
 
     [HttpPost("npc/buy")]
@@ -596,6 +655,40 @@ public class RaidController : ControllerBase
         AddLog(raid, $"🤝 Куплено у {npc.Name}: {tmpl.Name} ×{taken.Count} (-{paid} ₽).");
         _state.Persist();
         return new RaidActionResult { Raid = raid, Player = p, DroppedLoot = taken, Message = "Сделка завершена." };
+    }
+
+    [HttpPost("npc/sell")]
+    public ActionResult<RaidActionResult> SellToNpc([FromBody] NpcSellDto dto)
+    {
+        var raid = _state.Raid;
+        var p = _state.Player;
+        if (raid == null || raid.Finished) return BadRequest("Рейд не активен.");
+        if (raid.Combat != null) return BadRequest("Сначала завершите бой.");
+        var npc = raid.Npcs.FirstOrDefault(n => n.Id == dto.NpcId);
+        if (npc == null) return NotFound("NPC не найден.");
+        if (!npc.CanTrade) return BadRequest("Этот персонаж не торгует.");
+        if (Math.Abs(npc.X - raid.PlayerX) > 1 || Math.Abs(npc.Y - raid.PlayerY) > 1) return BadRequest("Подойдите ближе.");
+        if (string.IsNullOrWhiteSpace(dto.ItemId)) return BadRequest("Предмет не выбран.");
+
+        var item = p.Inventory.FirstOrDefault(i => i.Id == dto.ItemId);
+        if (item == null) return NotFound("Предмет не найден в инвентаре.");
+        bool isQuestItem = item.Code.StartsWith("quest_", StringComparison.OrdinalIgnoreCase)
+            || item.Code.StartsWith("q_", StringComparison.OrdinalIgnoreCase)
+            || item.Code.StartsWith("boss_", StringComparison.OrdinalIgnoreCase)
+            || item.Code.StartsWith("art_", StringComparison.OrdinalIgnoreCase);
+        if (isQuestItem) return BadRequest("Квестовые предметы нельзя продать.");
+
+        int count = Math.Clamp(dto.Count, 1, Math.Max(1, item.Count));
+        int unitPrice = Math.Max(1, (int)Math.Floor(item.Price * 0.4));
+        int gained = unitPrice * count;
+
+        InventoryHelper.RemoveFromInventory(p, item.Id, count);
+        p.Money += gained;
+        p.Stats.MoneyEarned += gained;
+
+        AddLog(raid, $"💰 Продано {npc.Name}: {item.Name} ×{count} (+{gained} ₽).");
+        _state.Persist();
+        return new RaidActionResult { Raid = raid, Player = p, Message = $"Продано: {item.Name} ×{count}." };
     }
 
     [HttpPost("abandon")]
@@ -2835,6 +2928,10 @@ public class RaidController : ControllerBase
 
             var t = GetCombatTile(c, cx, cy);
             if (t == null || t.Type is CombatTileTypes.Wall or CombatTileTypes.Sandbag)
+                return false;
+
+            // Укрытия/объекты интерьера перекрывают линию огня.
+            if (c.Objects.Any(o => o.BlocksMovement && o.X == cx && o.Y == cy))
                 return false;
         }
         return true;
